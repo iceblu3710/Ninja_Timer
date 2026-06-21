@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import routes_status, routes_timer
+from app.api import routes_leaderboards, routes_queue, routes_runs, routes_status, routes_timer
 from app.config import get_settings
 from app.db.database import initialize_database
 from app.logging_config import configure_logging
@@ -35,6 +35,9 @@ def create_app() -> FastAPI:
 
     app.include_router(routes_status.router)
     app.include_router(routes_timer.router)
+    app.include_router(routes_queue.router)
+    app.include_router(routes_runs.router)
+    app.include_router(routes_leaderboards.router)
 
     @app.get("/")
     async def get_root():

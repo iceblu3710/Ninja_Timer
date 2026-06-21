@@ -1,5 +1,5 @@
 """Pydantic DTOs for persistence-layer records."""
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 
 
 class OrmSchema(BaseModel):
@@ -43,12 +43,27 @@ class SessionRead(OrmSchema):
 
 class QueueEntryCreate(BaseModel):
     request_id: str | None = None
-    runner_name: str
+    runner_name: str | None = None
+    name: str | None = None
     age_group: str | None = None
-    course_slug: str
+    course_slug: str | None = None
+    course_id: int | None = None
+    course_revision_id: int | None = None
     mode: str = "OPEN_GYM"
     source: str = "KIOSK"
     session_id: int | None = None
+
+    @model_validator(mode="after")
+    def validate_required_identity(self) -> "QueueEntryCreate":
+        if not (self.runner_name or self.name):
+            raise ValueError("runner_name or name is required")
+        if self.course_id is None and self.course_slug is None:
+            raise ValueError("course_id or course_slug is required")
+        return self
+
+    @property
+    def display_name(self) -> str:
+        return (self.runner_name or self.name or "").strip()
 
 
 class QueueEntryRead(OrmSchema):
@@ -66,6 +81,17 @@ class QueueEntryRead(OrmSchema):
     version: int
     source: str
     created_at: str
+
+
+class QueueEntryUpdate(BaseModel):
+    request_id: str | None = None
+    version: int
+    position: int | None = None
+    status: str | None = None
+
+
+class QueueRecoverRequest(BaseModel):
+    policy: str = "RETURN_ACTIVE_TO_WAITING"
 
 
 class RunRead(OrmSchema):
@@ -88,6 +114,17 @@ class RunRead(OrmSchema):
     created_at: str
     updated_at: str
     deleted_at: str | None = None
+
+
+class RunUpdate(BaseModel):
+    runner_name: str | None = None
+    age_group: str | None = None
+    status: str | None = None
+    notes: str | None = None
+
+
+class RunDeleteRequest(BaseModel):
+    reason: str | None = None
 
 
 class TimerRunnerRead(BaseModel):

@@ -1,9 +1,9 @@
 """Queue/session persistence services."""
 from sqlalchemy.orm import Session
 
-from app.db.models import SessionModel
+from app.db.models import CourseRevision, QueueEntry, SessionModel
 from app.db.repositories import CourseRepository, QueueRepository, SessionRepository
-from app.db.schemas import QueueEntryCreate
+from app.db.schemas import QueueEntryCreate, QueueEntryUpdate
 
 
 def seed_active_session(db: Session) -> SessionModel:
@@ -22,15 +22,27 @@ def add_queue_entry(db: Session, payload: QueueEntryCreate):
     session = seed_active_session(db) if payload.session_id is None else None
     session_id = payload.session_id if payload.session_id is not None else session.id
 
-    course = course_repository.get_by_slug(payload.course_slug)
+    course = (
+        course_repository.get_by_id(payload.course_id)
+        if payload.course_id is not None
+        else course_repository.get_by_slug(payload.course_slug or "")
+    )
     if course is None:
-        raise ValueError(f"Unknown course slug: {payload.course_slug}")
-    revision = course_repository.get_open_revision(course.id)
+        course_ref = payload.course_id if payload.course_id is not None else payload.course_slug
+        raise ValueError(f"Unknown course: {course_ref}")
+
+    revision = (
+        db.get(CourseRevision, payload.course_revision_id)
+        if payload.course_revision_id is not None
+        else course_repository.get_open_revision(course.id)
+    )
+    if revision is not None and revision.course_id != course.id:
+        raise ValueError("Course revision does not belong to the selected course")
 
     return queue_repository.create_waiting(
         request_id=payload.request_id,
         session_id=session_id,
-        runner_name=payload.runner_name,
+        runner_name=payload.display_name,
         age_group=payload.age_group,
         course_id=course.id,
         course_revision_id=revision.id if revision is not None else None,
@@ -38,3 +50,41 @@ def add_queue_entry(db: Session, payload: QueueEntryCreate):
         source=payload.source,
     )
 
+
+def active_queue(
+    db: Session,
+    *,
+    session_id: int | None = None,
+    status: str | None = None,
+    limit: int = 50,
+) -> list[QueueEntry]:
+    return QueueRepository(db).list_active_queue(
+        session_id=session_id,
+        status=status,
+        limit=limit,
+    )
+
+
+def cancel_queue_entry(db: Session, queue_entry_id: int) -> QueueEntry | None:
+    return QueueRepository(db).cancel(queue_entry_id)
+
+
+def update_queue_entry(
+    db: Session,
+    queue_entry_id: int,
+    payload: QueueEntryUpdate,
+) -> QueueEntry | None:
+    repository = QueueRepository(db)
+    entry = repository.get(queue_entry_id)
+    if entry is None:
+        return None
+    return repository.update(
+        entry,
+        expected_version=payload.version,
+        position=payload.position,
+        status=payload.status,
+    )
+
+
+def recover_queue(db: Session, policy: str) -> list[QueueEntry]:
+    return QueueRepository(db).recover_active(policy)

@@ -1,0 +1,167 @@
+"""Queue API routes."""
+from fastapi import APIRouter, Depends, Query, status
+from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
+
+from app.db.database import get_db
+from app.db.models import Course, CourseRevision, QueueEntry
+from app.db.repositories import AuditRepository
+from app.db.schemas import QueueEntryCreate, QueueEntryUpdate, QueueRecoverRequest
+from app.services.queue_service import (
+    active_queue,
+    add_queue_entry,
+    cancel_queue_entry,
+    recover_queue,
+    update_queue_entry,
+)
+
+router = APIRouter(prefix="/api/v1/queue", tags=["queue"])
+
+
+def _ok(data: object) -> dict:
+    return {"ok": True, "data": data}
+
+
+def _error(http_status: int, code: str, message: str) -> JSONResponse:
+    return JSONResponse(
+        status_code=http_status,
+        content={"ok": False, "error": {"code": code, "message": message}},
+    )
+
+
+def _queue_entry_response(db: Session, entry: QueueEntry) -> dict:
+    course = db.get(Course, entry.course_id)
+    revision = (
+        db.get(CourseRevision, entry.course_revision_id)
+        if entry.course_revision_id is not None
+        else None
+    )
+    return {
+        "id": entry.id,
+        "request_id": entry.request_id,
+        "session_id": entry.session_id,
+        "athlete_id": entry.athlete_id,
+        "position": entry.position,
+        "sort_key": entry.sort_key,
+        "version": entry.version,
+        "runner_name": entry.runner_name_snapshot,
+        "age_group": entry.age_group_snapshot,
+        "course": (
+            {"id": course.id, "slug": course.slug, "name": course.name}
+            if course is not None
+            else None
+        ),
+        "course_revision": (
+            {
+                "id": revision.id,
+                "revision_code": revision.revision_code,
+                "revision_start_date": revision.revision_start_date,
+                "revision_end_date": revision.revision_end_date,
+            }
+            if revision is not None
+            else None
+        ),
+        "mode": entry.mode,
+        "status": entry.status,
+        "source": entry.source,
+        "created_at": entry.created_at,
+    }
+
+
+@router.get("")
+async def get_queue(
+    session_id: int | None = None,
+    status_filter: str | None = Query(default=None, alias="status"),
+    limit: int = Query(default=50, ge=1, le=200),
+    db: Session = Depends(get_db),
+) -> dict:
+    entries = active_queue(db, session_id=session_id, status=status_filter, limit=limit)
+    return _ok([_queue_entry_response(db, entry) for entry in entries])
+
+
+@router.post("")
+async def create_queue_entry(
+    payload: QueueEntryCreate,
+    db: Session = Depends(get_db),
+):
+    try:
+        entry = add_queue_entry(db, payload)
+        db.commit()
+        return _ok(_queue_entry_response(db, entry))
+    except ValueError as exc:
+        db.rollback()
+        return _error(status.HTTP_404_NOT_FOUND, "NOT_FOUND", str(exc))
+
+
+@router.patch("/{queue_entry_id}")
+async def patch_queue_entry(
+    queue_entry_id: int,
+    payload: QueueEntryUpdate,
+    db: Session = Depends(get_db),
+):
+    try:
+        entry = update_queue_entry(db, queue_entry_id, payload)
+    except ValueError as exc:
+        db.rollback()
+        return _error(status.HTTP_409_CONFLICT, "STALE_VERSION", str(exc))
+
+    if entry is None:
+        db.rollback()
+        return _error(
+            status.HTTP_404_NOT_FOUND,
+            "NOT_FOUND",
+            f"Queue entry {queue_entry_id} was not found.",
+        )
+
+    AuditRepository(db).record(
+        actor="ADMIN",
+        action="UPDATE_QUEUE_ENTRY",
+        target_type="queue_entry",
+        target_id=entry.id,
+        request_id=payload.request_id,
+    )
+    db.commit()
+    return _ok(_queue_entry_response(db, entry))
+
+
+@router.post("/recover")
+async def recover_queue_entries(
+    payload: QueueRecoverRequest,
+    db: Session = Depends(get_db),
+):
+    try:
+        entries = recover_queue(db, payload.policy)
+    except ValueError as exc:
+        db.rollback()
+        return _error(status.HTTP_409_CONFLICT, "INVALID_POLICY", str(exc))
+
+    AuditRepository(db).record(
+        actor="ADMIN",
+        action="RECOVER_QUEUE",
+        target_type="queue",
+    )
+    db.commit()
+    return _ok([_queue_entry_response(db, entry) for entry in entries])
+
+
+@router.delete("/{queue_entry_id}")
+async def delete_queue_entry(
+    queue_entry_id: int,
+    db: Session = Depends(get_db),
+):
+    entry = cancel_queue_entry(db, queue_entry_id)
+    if entry is None:
+        db.rollback()
+        return _error(
+            status.HTTP_404_NOT_FOUND,
+            "NOT_FOUND",
+            f"Queue entry {queue_entry_id} was not found.",
+        )
+    AuditRepository(db).record(
+        actor="ADMIN",
+        action="CANCEL_QUEUE_ENTRY",
+        target_type="queue_entry",
+        target_id=entry.id,
+    )
+    db.commit()
+    return _ok(_queue_entry_response(db, entry))

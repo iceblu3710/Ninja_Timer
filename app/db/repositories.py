@@ -196,13 +196,20 @@ class QueueRepository:
         self.db.flush()
         return entry
 
-    def list_active_queue(self, session_id: int | None = None) -> list[QueueEntry]:
+    def list_active_queue(
+        self,
+        session_id: int | None = None,
+        status: str | None = None,
+        limit: int = 50,
+    ) -> list[QueueEntry]:
         statement: Select[tuple[QueueEntry]] = select(QueueEntry).where(
             QueueEntry.status.in_(["WAITING", "CALLED", "ACTIVE"])
         )
         if session_id is not None:
             statement = statement.where(QueueEntry.session_id == session_id)
-        statement = statement.order_by(QueueEntry.sort_key, QueueEntry.created_at)
+        if status is not None:
+            statement = statement.where(QueueEntry.status == status)
+        statement = statement.order_by(QueueEntry.sort_key, QueueEntry.created_at).limit(limit)
         return list(self.db.scalars(statement))
 
     def first_waiting(self) -> QueueEntry | None:
@@ -230,6 +237,71 @@ class QueueRepository:
         self.db.flush()
         return entry
 
+    def cancel(self, queue_entry_id: int) -> QueueEntry | None:
+        entry = self.get(queue_entry_id)
+        if entry is None:
+            return None
+        now = utc_now()
+        entry.status = "CANCELLED"
+        entry.cancelled_at = now
+        entry.version += 1
+        self.db.flush()
+        return entry
+
+    def update(
+        self,
+        entry: QueueEntry,
+        *,
+        expected_version: int,
+        position: int | None = None,
+        status: str | None = None,
+    ) -> QueueEntry:
+        if entry.version != expected_version:
+            raise ValueError("Queue entry version is stale")
+
+        now = utc_now()
+        if position is not None:
+            entry.position = position
+            entry.sort_key = position * 1000
+        if status is not None:
+            entry.status = status
+            if status == "CANCELLED":
+                entry.cancelled_at = now
+            elif status == "SKIPPED":
+                entry.skipped_at = now
+            elif status == "COMPLETED":
+                entry.completed_at = now
+            elif status == "ACTIVE":
+                entry.started_at = now
+        entry.version += 1
+        self.db.flush()
+        return entry
+
+    def recover_active(self, policy: str) -> list[QueueEntry]:
+        active_entries = list(
+            self.db.scalars(select(QueueEntry).where(QueueEntry.status == "ACTIVE"))
+        )
+        if policy == "LEAVE_UNCHANGED":
+            return active_entries
+
+        for entry in active_entries:
+            if policy == "RETURN_ACTIVE_TO_WAITING":
+                entry.status = "WAITING"
+                entry.started_at = None
+                entry.locked_at = None
+                entry.locked_by = None
+            elif policy == "MARK_ACTIVE_ERROR":
+                entry.status = "ERROR"
+                entry.last_error = "Recovered active queue entry after restart"
+            else:
+                raise ValueError(f"Unknown recovery policy: {policy}")
+            entry.version += 1
+            entry.completed_at = None
+            entry.cancelled_at = None
+            entry.skipped_at = None
+        self.db.flush()
+        return active_entries
+
 
 class RunRepository:
     def __init__(self, db: Session):
@@ -242,15 +314,32 @@ class RunRepository:
         self.db.flush()
         return run
 
-    def recent(self, limit: int = 10) -> list[Run]:
-        return list(
-            self.db.scalars(
-                select(Run)
-                .where(Run.deleted_at.is_(None))
-                .order_by(Run.created_at.desc())
-                .limit(limit)
-            )
-        )
+    def get(self, run_id: int) -> Run | None:
+        return self.db.get(Run, run_id)
+
+    def recent(
+        self,
+        *,
+        limit: int = 10,
+        session_id: int | None = None,
+        course_id: int | None = None,
+        course_revision_id: int | None = None,
+        mode: str | None = None,
+        status: str | None = None,
+    ) -> list[Run]:
+        statement = select(Run).where(Run.deleted_at.is_(None))
+        if session_id is not None:
+            statement = statement.where(Run.session_id == session_id)
+        if course_id is not None:
+            statement = statement.where(Run.course_id == course_id)
+        if course_revision_id is not None:
+            statement = statement.where(Run.course_revision_id == course_revision_id)
+        if mode is not None:
+            statement = statement.where(Run.mode == mode)
+        if status is not None:
+            statement = statement.where(Run.status == status)
+        statement = statement.order_by(Run.created_at.desc()).limit(limit)
+        return list(self.db.scalars(statement))
 
     def most_recent(self) -> Run | None:
         return self.db.scalar(

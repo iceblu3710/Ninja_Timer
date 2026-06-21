@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 
 from app.api import routes_leaderboards, routes_queue, routes_runs
+from app.api.auth import require_admin
 from app.db.database import SessionLocal, get_db, initialize_database, reset_engine_for_tests
 from app.db.models import Course, CourseRevision, QueueEntry, Run
 from app.db.repositories import RunRepository, utc_now
@@ -28,6 +29,7 @@ def _agent_d_client():
             db.close()
 
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[require_admin] = lambda: "ADMIN"
     return TestClient(app)
 
 

@@ -1,4 +1,5 @@
 """Operations and gym-readiness API routes."""
+
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -37,7 +38,7 @@ async def create_backup(
 ):
     try:
         backup = create_database_backup(settings)
-    except (FileNotFoundError, ValueError) as exc:
+    except (FileNotFoundError, OSError, ValueError) as exc:
         return _error(status.HTTP_409_CONFLICT, "BACKUP_FAILED", str(exc))
 
     AuditRepository(db).record(
@@ -65,6 +66,8 @@ async def get_log_file(
     _ = actor
     try:
         return _ok(tail_log_file(filename, lines=lines))
+    except ValueError as exc:
+        return _error(status.HTTP_400_BAD_REQUEST, "INVALID_LOG_FILENAME", str(exc))
     except FileNotFoundError as exc:
         return _error(status.HTTP_404_NOT_FOUND, "NOT_FOUND", str(exc))
 

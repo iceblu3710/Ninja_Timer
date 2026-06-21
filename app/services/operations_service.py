@@ -1,8 +1,10 @@
 """Operational helpers for backups, exports, logs, and recovery."""
+
 from __future__ import annotations
 
 import json
 import sqlite3
+from collections import deque
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -13,6 +15,7 @@ from app.db.database import SessionLocal
 from app.db.repositories import AuditRepository, QueueRepository, SystemEventRepository
 
 BACKUP_PREFIX = "dynasty_ninja_timer"
+LOG_DIR = Path("data/logs")
 
 
 def create_database_backup(settings: Settings | None = None) -> dict[str, object]:
@@ -64,15 +67,16 @@ def list_database_backups() -> list[dict[str, object]]:
 
 
 def tail_log_file(filename: str, *, lines: int = 200) -> dict[str, object]:
-    safe_name = Path(filename).name
-    log_path = Path("data/logs") / safe_name
+    safe_name, log_path = _log_file_path(filename)
     if not log_path.exists():
         raise FileNotFoundError(f"Log file does not exist: {safe_name}")
+    tail: deque[str] = deque(maxlen=lines)
     with log_path.open("r", encoding="utf-8", errors="replace") as file:
-        content = file.readlines()
+        for line in file:
+            tail.append(line)
     return {
         "filename": safe_name,
-        "lines": content[-lines:],
+        "lines": list(tail),
     }
 
 
@@ -95,6 +99,24 @@ def sqlite_database_path(database_url: str) -> Path | None:
     if not url.drivername.startswith("sqlite") or url.database in (None, ":memory:"):
         return None
     return Path(url.database)
+
+
+def _log_file_path(filename: str) -> tuple[str, Path]:
+    requested = Path(filename)
+    if (
+        not filename
+        or requested.is_absolute()
+        or requested.name != filename
+        or filename in {".", ".."}
+    ):
+        raise ValueError("Log filename is invalid.")
+    log_dir = LOG_DIR.resolve()
+    log_path = (LOG_DIR / requested.name).resolve()
+    try:
+        log_path.relative_to(log_dir)
+    except ValueError as exc:
+        raise ValueError("Log filename is outside the log directory.") from exc
+    return requested.name, log_path
 
 
 def recover_after_restart() -> dict[str, object]:

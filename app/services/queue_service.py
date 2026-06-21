@@ -1,4 +1,5 @@
 """Queue/session persistence services."""
+
 from sqlalchemy.orm import Session
 
 from app.db.models import CourseRevision, QueueEntry, SessionModel
@@ -46,7 +47,7 @@ def add_queue_entry(db: Session, payload: QueueEntryCreate):
         age_group=payload.age_group,
         course_id=course.id,
         course_revision_id=revision.id if revision is not None else None,
-        mode=payload.mode,
+        mode=payload.mode or course.default_mode,
         source=payload.source,
     )
 

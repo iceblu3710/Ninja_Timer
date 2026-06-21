@@ -1,4 +1,5 @@
 """Runs API routes."""
+
 import csv
 from io import StringIO
 
@@ -7,6 +8,7 @@ from fastapi.responses import JSONResponse, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.api.auth import require_admin
 from app.api.response_models import run_response
 from app.db.database import get_db
 from app.db.models import Run
@@ -142,6 +144,7 @@ async def update_run(
     run_id: int,
     payload: RunUpdate,
     db: Session = Depends(get_db),
+    actor: str = Depends(require_admin),
 ):
     repository = RunRepository(db)
     run = repository.get(run_id)
@@ -162,7 +165,7 @@ async def update_run(
     if values:
         repository.update(run, **values)
         AuditRepository(db).record(
-            actor="ADMIN",
+            actor=actor,
             action="UPDATE_RUN",
             target_type="run",
             target_id=run.id,
@@ -179,13 +182,14 @@ async def delete_run(
     run_id: int,
     payload: RunDeleteRequest | None = None,
     db: Session = Depends(get_db),
+    actor: str = Depends(require_admin),
 ):
     run = soft_delete_run(db, run_id, reason=payload.reason if payload is not None else None)
     if run is None:
         db.rollback()
         return _error(status.HTTP_404_NOT_FOUND, "NOT_FOUND", f"Run {run_id} was not found.")
     AuditRepository(db).record(
-        actor="ADMIN",
+        actor=actor,
         action="DELETE_RUN",
         target_type="run",
         target_id=run.id,

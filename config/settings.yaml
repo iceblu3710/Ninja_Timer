@@ -2,10 +2,12 @@
 
 app:
   name: Dynasty Ninja Timer
-  version: 0.1.0
+  version: 1.0.0
   debug: false
   host: 0.0.0.0
   port: 8000
+  scoreboard_port: 8001
+  kiosk_port: 8002
 
 database:
   url: "sqlite:///./data/dynasty_ninja_timer.sqlite"
@@ -13,11 +15,23 @@ database:
 
 hardware:
   driver: simulated  # simulated, arduino, m5stamp
+  debounce_ms: 250
+  serial_port:
+  serial_baud: 115200
+  heartbeat_timeout_seconds: 5
+  reconnect_interval_seconds: 2
+  m5_host:
+  mqtt_host:
+  mqtt_port: 1883
+  mqtt_topic_prefix: dynasty/timer/io
+  mqtt_device_id: m5stamp-main
   countdown_seconds: 3
   default_mode: open_gym  # open_gym, party, competition
 
 security:
   admin_pin: "1234"
+  # Prefer ADMIN_TOKEN_SECRET in the environment for real deployments.
+  admin_token_secret:
   admin_session_seconds: 43200
 
 operations:

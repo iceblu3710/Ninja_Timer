@@ -4,6 +4,7 @@ Revision ID: 0001_initial_persistence
 Revises:
 Create Date: 2026-06-20 00:00:00
 """
+
 from alembic import op
 
 from app.db import models  # noqa: F401
@@ -21,4 +22,3 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     Base.metadata.drop_all(bind=op.get_bind())
-

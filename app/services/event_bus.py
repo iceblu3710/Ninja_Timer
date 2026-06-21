@@ -1,4 +1,5 @@
 """In-process event bus for live browser updates."""
+
 from __future__ import annotations
 
 import asyncio

@@ -1,4 +1,5 @@
 """Leaderboard query helpers backed by persisted runs."""
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 

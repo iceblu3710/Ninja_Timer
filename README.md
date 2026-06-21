@@ -88,8 +88,11 @@ Runtime settings are loaded from [config/settings.yaml](config/settings.yaml). E
 - `PORT`: default server port used by settings
 - `RELOAD`: enables reload mode when set to `true`
 - `ADMIN_PIN`: local admin PIN for protected operations
+- `ADMIN_TOKEN_SECRET`: secret used to sign admin session tokens
 - `ADMIN_SESSION_SECONDS`: admin token lifetime
 - `BACKUP_RETENTION_DAYS`: database backup retention window
+
+For any real gym deployment, change the default `ADMIN_PIN` before exposing admin pages or APIs on the LAN. The app logs a warning when the development PIN is still active.
 
 The default database is:
 
@@ -131,6 +134,10 @@ ruff check .
 black --check .
 mypy app
 ```
+
+## Release Readiness
+
+See [docs/V1_RELEASE_REVIEW.md](docs/V1_RELEASE_REVIEW.md) for the current code review, security notes, exception-handling work, memory/resource review, and v1.0 task list.
 
 ## Project Layout
 

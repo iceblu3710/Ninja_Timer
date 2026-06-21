@@ -1,4 +1,5 @@
 """SQLAlchemy engine, sessions, and SQLite initialization helpers."""
+
 from collections.abc import Generator
 from pathlib import Path
 from typing import Any
@@ -66,6 +67,7 @@ def initialize_database(settings: Settings | None = None) -> None:
 
     engine = get_engine(settings)
     Base.metadata.create_all(bind=engine)
+    _ensure_sqlite_schema(engine)
 
     with SessionLocal() as db:
         seed_default_courses(db)
@@ -121,3 +123,40 @@ def _attach_sqlite_pragmas(engine: Engine) -> None:
         cursor.execute("PRAGMA synchronous = NORMAL")
         cursor.execute("PRAGMA busy_timeout = 5000")
         cursor.close()
+
+
+def _ensure_sqlite_schema(engine: Engine) -> None:
+    if engine.dialect.name != "sqlite":
+        return
+
+    course_columns = {
+        "default_mode": "VARCHAR NOT NULL DEFAULT 'OPEN_GYM'",
+        "countdown_seconds": "INTEGER NOT NULL DEFAULT 3",
+        "false_start_enabled": "BOOLEAN NOT NULL DEFAULT 1",
+        "false_start_sensitivity": "INTEGER NOT NULL DEFAULT 5",
+        "relay_start_lights": "BOOLEAN NOT NULL DEFAULT 1",
+        "relay_finish_chime": "BOOLEAN NOT NULL DEFAULT 1",
+        "relay_smoke_burst": "BOOLEAN NOT NULL DEFAULT 0",
+        "relay_crowd_cheer": "BOOLEAN NOT NULL DEFAULT 1",
+    }
+    run_columns = {
+        "obstacle_status_json": "TEXT",
+    }
+    with engine.begin() as connection:
+        existing = {
+            row[1] for row in connection.exec_driver_sql("PRAGMA table_info(courses)").fetchall()
+        }
+        for column_name, column_sql in course_columns.items():
+            if column_name not in existing:
+                connection.exec_driver_sql(
+                    f"ALTER TABLE courses ADD COLUMN {column_name} {column_sql}"
+                )
+
+        existing_runs = {
+            row[1] for row in connection.exec_driver_sql("PRAGMA table_info(runs)").fetchall()
+        }
+        for column_name, column_sql in run_columns.items():
+            if column_name not in existing_runs:
+                connection.exec_driver_sql(
+                    f"ALTER TABLE runs ADD COLUMN {column_name} {column_sql}"
+                )

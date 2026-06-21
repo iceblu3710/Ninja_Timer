@@ -1,4 +1,5 @@
 """Pydantic DTOs for persistence-layer records."""
+
 from pydantic import BaseModel, ConfigDict, model_validator
 
 
@@ -11,6 +12,14 @@ class CourseRead(OrmSchema):
     slug: str
     name: str
     description: str | None = None
+    default_mode: str
+    countdown_seconds: int
+    false_start_enabled: bool
+    false_start_sensitivity: int
+    relay_start_lights: bool
+    relay_finish_chime: bool
+    relay_smoke_burst: bool
+    relay_crowd_cheer: bool
     active: bool
     created_at: str
     updated_at: str
@@ -33,16 +42,33 @@ class CourseCreate(BaseModel):
     slug: str | None = None
     name: str
     description: str | None = None
+    default_mode: str = "OPEN_GYM"
+    countdown_seconds: int = 3
+    false_start_enabled: bool = True
+    false_start_sensitivity: int = 5
+    relay_start_lights: bool = True
+    relay_finish_chime: bool = True
+    relay_smoke_burst: bool = False
+    relay_crowd_cheer: bool = True
     first_revision_name: str | None = None
     revision_start_date: str | None = None
     layout_notes: str | None = None
     obstacle_count: int | None = None
+    rules_json: str | None = None
 
 
 class CourseUpdate(BaseModel):
     slug: str | None = None
     name: str | None = None
     description: str | None = None
+    default_mode: str | None = None
+    countdown_seconds: int | None = None
+    false_start_enabled: bool | None = None
+    false_start_sensitivity: int | None = None
+    relay_start_lights: bool | None = None
+    relay_finish_chime: bool | None = None
+    relay_smoke_burst: bool | None = None
+    relay_crowd_cheer: bool | None = None
     active: bool | None = None
 
 
@@ -94,7 +120,7 @@ class QueueEntryCreate(BaseModel):
     course_slug: str | None = None
     course_id: int | None = None
     course_revision_id: int | None = None
-    mode: str = "OPEN_GYM"
+    mode: str | None = None
     source: str = "KIOSK"
     session_id: int | None = None
 
@@ -159,6 +185,7 @@ class RunRead(OrmSchema):
     created_at: str
     updated_at: str
     deleted_at: str | None = None
+    obstacle_status_json: str | None = None
 
 
 class RunUpdate(BaseModel):
@@ -182,6 +209,9 @@ class TimerCourseRead(BaseModel):
     id: int
     slug: str
     name: str
+    countdown_seconds: int = 0
+    obstacle_count: int | None = None
+    rules_json: str | None = None
 
 
 class TimerStateRead(BaseModel):
@@ -189,16 +219,22 @@ class TimerStateRead(BaseModel):
     elapsed_ms: int | None = None
     started_at: str | None = None
     finished_at: str | None = None
+    countdown_seconds: int = 0
+    countdown_started_at: str | None = None
+    countdown_ends_at: str | None = None
+    countdown_remaining_ms: int | None = None
+    countdown_token: int | None = None
     runner: TimerRunnerRead | None = None
     course: TimerCourseRead | None = None
     mode: str | None = None
     run_id: int | None = None
+    obstacle_status: list[str] | None = None
 
 
 class TimerArmRequest(BaseModel):
     queue_entry_id: int | None = None
     course_id: int | None = None
-    mode: str = "OPEN_GYM"
+    mode: str | None = None
     runner_name: str | None = None
     age_group: str | None = None
 
@@ -214,7 +250,7 @@ class TimerStopRequest(BaseModel):
 
 
 class TimerResetRequest(BaseModel):
-    clear_active_runner: bool = True
+    clear_active_runner: bool = False
 
 
 class TimerDnfRequest(BaseModel):
@@ -223,6 +259,31 @@ class TimerDnfRequest(BaseModel):
 
 
 class TimerDeleteLastRunRequest(BaseModel):
+    reason: str | None = None
+
+
+class HardwareSimulateRequest(BaseModel):
+    input_key: str
+    state: str = "DOWN"
+
+
+class HardwareRawEventRequest(BaseModel):
+    line: str | None = None
+    payload: dict | None = None
+    transport: str | None = None
+
+
+class RelayActionRequest(BaseModel):
+    action_key: str
+    command: str | None = None
+    target: str | None = None
+    action: str | None = None
+    duration_ms: int | None = None
+    requested_by: str = "ADMIN"
+    run_id: int | None = None
+
+
+class HardwareReconnectRequest(BaseModel):
     reason: str | None = None
 
 
@@ -253,3 +314,7 @@ class SettingRollbackRequest(BaseModel):
 class BackupCreateRequest(BaseModel):
     request_id: str | None = None
     reason: str | None = None
+
+
+class QueueReorderRequest(BaseModel):
+    queue_entry_ids: list[int]

@@ -1,4 +1,5 @@
 """Shared API response serializers."""
+
 from sqlalchemy.orm import Session
 
 from app.db.models import Course, CourseRevision, QueueEntry, Run
@@ -62,6 +63,7 @@ def run_response(run: Run) -> dict:
         "elapsed_ms": run.elapsed_ms,
         "source": run.source,
         "notes": run.notes,
+        "obstacle_status_json": run.obstacle_status_json,
         "created_at": run.created_at,
         "updated_at": run.updated_at,
         "deleted_at": run.deleted_at,

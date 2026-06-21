@@ -1,4 +1,5 @@
 """Validated settings workflows for local operations."""
+
 from __future__ import annotations
 
 import json

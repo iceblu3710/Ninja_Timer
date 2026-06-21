@@ -1,4 +1,5 @@
 """Pure timer state transition logic."""
+
 from enum import StrEnum
 
 

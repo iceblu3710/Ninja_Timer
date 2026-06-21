@@ -1,12 +1,1930 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="refresh" content="0; url=/admin">
-    <title>Dynasty Ninja Timer - Admin Dashboard</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dynasty Ninja Timer UI Showcase</title>
+  <style>
+    :root {
+      --bg: #050407;
+      --panel: rgba(14, 12, 20, 0.92);
+      --panel-2: rgba(24, 18, 34, 0.92);
+      --panel-3: rgba(9, 8, 14, 0.96);
+      --purple: #7d2bd6;
+      --purple-2: #b55cff;
+      --purple-dim: #32144f;
+      --gold: #f6c82f;
+      --gold-2: #ffde65;
+      --white: #f6f3ff;
+      --muted: #a9a1b8;
+      --green: #55ee59;
+      --red: #ff4545;
+      --orange: #ff9b2f;
+      --line: rgba(151, 72, 236, 0.62);
+      --shadow: 0 0 36px rgba(125, 43, 214, 0.2);
+      --radius: 18px;
+      --font-display: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+      --font-ui: 'Trebuchet MS', system-ui, sans-serif;
+      --font-mono: 'Cascadia Mono', 'Consolas', monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font-ui);
+      color: var(--white);
+      background:
+        radial-gradient(circle at 18% 15%, rgba(125, 43, 214, 0.33), transparent 28%),
+        radial-gradient(circle at 83% 30%, rgba(246, 200, 47, 0.15), transparent 23%),
+        linear-gradient(135deg, #020103 0%, #080412 45%, #030205 100%);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(120deg, transparent 0 9%, rgba(125, 43, 214, .18) 9.2% 9.7%, transparent 10% 33%, rgba(246, 200, 47, .13) 33.2% 33.7%, transparent 34% 100%),
+        radial-gradient(circle, rgba(255,255,255,.08) 1px, transparent 1px);
+      background-size: auto, 22px 22px;
+      opacity: .34;
+      z-index: -1;
+    }
+
+    .app-shell {
+      width: min(1800px, 100vw);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 22px 28px 28px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 22px;
+      padding: 12px 14px 20px;
+      border-bottom: 1px solid rgba(125, 43, 214, 0.48);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 270px;
+    }
+
+    .logo-mark {
+      position: relative;
+      width: 86px;
+      height: 76px;
+      filter: drop-shadow(0 0 14px rgba(125, 43, 214, .5));
+    }
+
+    .logo-mark::before {
+      content: "DN";
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-size: 58px;
+      color: var(--gold);
+      transform: rotate(-9deg);
+      text-shadow: 0 0 16px rgba(246, 200, 47, .38);
+    }
+
+    .brand-title {
+      line-height: .8;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+    }
+
+    .brand-title .dynasty {
+      display: block;
+      font-family: var(--font-display);
+      font-size: clamp(38px, 3vw, 64px);
+      color: var(--purple-2);
+      font-style: italic;
+      text-shadow: 3px 3px 0 #160522, 0 0 22px rgba(125, 43, 214, .6);
+    }
+
+    .brand-title .ninja {
+      display: block;
+      margin-left: 36px;
+      font-family: var(--font-display);
+      font-size: clamp(22px, 2vw, 42px);
+      color: var(--gold);
+      transform: skew(-12deg);
+      text-shadow: 2px 2px 0 #1b1300;
+    }
+
+    .headline {
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .headline h1 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(28px, 2.5vw, 54px);
+      letter-spacing: 2px;
+      color: var(--white);
+    }
+
+    .headline p {
+      margin: 4px 0 0;
+      color: var(--gold);
+      font-weight: 900;
+      letter-spacing: 2px;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 16px;
+      flex-wrap: wrap;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      border: 1px solid rgba(125,43,214,.45);
+      background: rgba(0,0,0,.38);
+      clip-path: polygon(7% 0, 100% 0, 93% 100%, 0% 100%);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 12px var(--green);
+    }
+
+    .view-tabs {
+      display: flex;
+      gap: 12px;
+      margin: 18px 0;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      cursor: pointer;
+      border: 1px solid rgba(125,43,214,.65);
+      background: linear-gradient(180deg, rgba(28, 15, 43, .9), rgba(11, 8, 16, .94));
+      color: var(--muted);
+      padding: 13px 22px;
+      font-weight: 1000;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);
+      transition: transform .16s ease, color .16s ease, border-color .16s ease;
+    }
+
+    .tab-btn:hover { transform: translateY(-2px); color: var(--white); }
+    .tab-btn.active {
+      color: #080608;
+      background: linear-gradient(180deg, var(--gold-2), var(--gold));
+      border-color: var(--gold);
+      box-shadow: 0 0 24px rgba(246, 200, 47, .26);
+    }
+
+    .view { display: none; animation: snapIn .28s ease both; }
+    .view.active { display: block; }
+
+    @keyframes snapIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .panel {
+      position: relative;
+      background: linear-gradient(180deg, var(--panel), var(--panel-3));
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow), inset 0 0 0 1px rgba(255,255,255,.04);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .panel::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 5px;
+      background: linear-gradient(90deg, transparent, var(--purple), var(--gold), transparent);
+      opacity: .6;
+    }
+
+    .section-title {
+      margin: 0 0 14px;
+      color: var(--purple-2);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-weight: 1000;
+    }
+
+    .display-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.9fr) minmax(360px, .86fr);
+      gap: 24px;
+      min-height: calc(100vh - 190px);
+    }
+
+    .timer-card {
+      padding: 30px clamp(22px, 3vw, 58px);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-height: 650px;
+    }
+
+    .runner-label {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 24px;
+      color: var(--purple-2);
+      font-weight: 1000;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-size: 26px;
+    }
+
+    .runner-name {
+      margin: 10px 0 8px;
+      text-align: center;
+      font-family: var(--font-display);
+      font-size: clamp(76px, 8vw, 170px);
+      letter-spacing: 8px;
+      text-transform: uppercase;
+      line-height: .88;
+      text-shadow: 8px 8px 0 rgba(0,0,0,.7), 0 0 18px rgba(255,255,255,.16);
+    }
+
+    .timer-value {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      font-family: var(--font-display);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 6px;
+      color: var(--gold);
+      font-size: clamp(92px, 12vw, 230px);
+      line-height: .9;
+      text-shadow: 7px 7px 0 #171005, 0 0 34px rgba(246, 200, 47, .28);
+    }
+
+    .status-banner {
+      width: min(680px, 84%);
+      margin: 0 auto 20px;
+      padding: 16px 30px;
+      text-align: center;
+      background: linear-gradient(90deg, transparent, rgba(125,43,214,.9), transparent);
+      color: var(--white);
+      font-family: var(--font-display);
+      font-size: 44px;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      clip-path: polygon(9% 0, 91% 0, 100% 50%, 91% 100%, 9% 100%, 0 50%);
+    }
+
+    .info-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .mini-card {
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 70px 1fr;
+      gap: 14px;
+      align-items: center;
+      min-height: 120px;
+    }
+
+    .iconbox {
+      width: 66px;
+      height: 66px;
+      display: grid;
+      place-items: center;
+      font-family: var(--font-display);
+      font-size: 24px;
+      letter-spacing: .5px;
+      color: var(--gold);
+      border: 1px solid rgba(246, 200, 47, .32);
+      background: rgba(246,200,47,.08);
+      border-radius: 14px;
+    }
+
+    .mini-card small {
+      display: block;
+      color: var(--purple-2);
+      font-weight: 1000;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .mini-card strong {
+      display: block;
+      margin-top: 4px;
+      font-family: var(--font-display);
+      font-size: clamp(25px, 2vw, 38px);
+      line-height: .95;
+      text-transform: uppercase;
+    }
+
+    .side-stack { display: grid; gap: 18px; }
+
+    .leader-panel { padding: 20px 22px 24px; }
+
+    .leader-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 10px;
+      color: #100900;
+      background: linear-gradient(90deg, var(--gold), var(--gold-2));
+      font-family: var(--font-display);
+      font-size: 30px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 8px 16px;
+      clip-path: polygon(0 0, 90% 0, 100% 50%, 90% 100%, 0 100%);
+    }
+
+    .rank-row {
+      display: grid;
+      grid-template-columns: 42px 1fr auto auto;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(125,43,214,.28);
+      font-family: var(--font-mono);
+      font-size: 22px;
+      font-weight: 1000;
+    }
+
+    .rank { color: var(--purple-2); font-family: var(--font-display); font-size: 30px; }
+    .rank-time.gold { color: var(--gold); }
+    .delta { color: var(--red); font-size: 16px; }
+    .delta.best { color: var(--green); }
+
+    .bottom-ticker {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      margin-top: 20px;
+      padding: 15px 24px;
+      border: 1px solid rgba(125,43,214,.62);
+      background: rgba(0,0,0,.46);
+      color: var(--gold);
+      font-weight: 1000;
+      letter-spacing: 1.3px;
+      text-transform: uppercase;
+      clip-path: polygon(2% 0, 100% 0, 98% 100%, 0 100%);
+    }
+
+    .admin-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(400px, .72fr);
+      gap: 22px;
+    }
+
+    .control-panel { padding: 22px; }
+    .control-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+    }
+
+    .big-control {
+      min-height: 94px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.12);
+      color: var(--white);
+      background: rgba(24,18,34,.88);
+      font-family: var(--font-display);
+      font-size: clamp(20px, 1.5vw, 34px);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: transform .15s ease, filter .15s ease;
+    }
+
+    .big-control:hover { transform: translateY(-2px); filter: brightness(1.18); }
+    .big-control.arm { background: linear-gradient(180deg, #6421a9, #2b1048); }
+    .big-control.start { background: linear-gradient(180deg, #228c18, #0f3d0c); }
+    .big-control.stop { background: linear-gradient(180deg, #931f24, #421013); }
+    .big-control.reset { background: linear-gradient(180deg, #97720c, #473503); }
+    .big-control.accept { background: linear-gradient(180deg, #109f8a, #075c50); border-color: rgba(85, 238, 89, 0.35); }
+    .big-control.delete { background: linear-gradient(180deg, #3a1118, #13090c); border-color: rgba(255,69,69,.6); }
+
+    .settings-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .setting-card { padding: 18px; min-height: 220px; }
+
+    .course-admin-panel {
+      margin-top: 16px;
+      padding: 20px;
+    }
+
+    .panel-heading {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .admin-auth-row {
+      display: grid;
+      grid-template-columns: minmax(150px, 220px) auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .designer-grid {
+      display: grid;
+      grid-template-columns: minmax(260px, .72fr) minmax(0, 1fr);
+      gap: 18px;
+      margin-top: 14px;
+    }
+
+    .designer-fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .designer-fields .full { grid-column: 1 / -1; }
+
+    .text-input, .text-area, .select-input {
+      width: 100%;
+      border: 1px solid rgba(125,43,214,.62);
+      border-radius: 8px;
+      background: rgba(0,0,0,.34);
+      color: var(--white);
+      padding: 12px 14px;
+      font-family: var(--font-ui);
+      font-weight: 900;
+    }
+
+    .text-area {
+      min-height: 112px;
+      resize: vertical;
+      line-height: 1.4;
+    }
+
+    .form-label {
+      display: block;
+      color: var(--purple-2);
+      font-size: 12px;
+      font-weight: 1000;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .action-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .mini-action {
+      min-height: 40px;
+      border: 1px solid rgba(246,200,47,.45);
+      border-radius: 8px;
+      background: rgba(246,200,47,.12);
+      color: var(--gold);
+      cursor: pointer;
+      font-weight: 1000;
+      letter-spacing: .8px;
+      padding: 9px 12px;
+      text-transform: uppercase;
+    }
+
+    .mini-action.danger {
+      border-color: rgba(255,69,69,.45);
+      color: var(--red);
+      background: rgba(255,69,69,.08);
+    }
+
+    .course-summary {
+      padding: 12px;
+      border: 1px solid rgba(125,43,214,.32);
+      border-radius: 8px;
+      background: rgba(255,255,255,.025);
+      color: var(--muted);
+      font-weight: 900;
+      line-height: 1.35;
+    }
+
+    .choice {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 10px 0;
+      padding: 10px 12px;
+      border: 1px solid rgba(125,43,214,.34);
+      border-radius: 8px;
+      background: rgba(255,255,255,.025);
+      color: var(--muted);
+      font-weight: 900;
+      text-transform: uppercase;
+      font-size: 14px;
+    }
+
+    .choice.selected {
+      color: #090705;
+      background: linear-gradient(90deg, var(--gold), rgba(246,200,47,.72));
+      border-color: var(--gold);
+    }
+
+    .bars { display: flex; gap: 5px; margin-top: 14px; }
+    .bars span {
+      width: 18px;
+      height: 28px;
+      background: rgba(255,255,255,.12);
+      transform: skew(-7deg);
+    }
+    .bars span.on { background: var(--gold); box-shadow: 0 0 8px rgba(246,200,47,.35); }
+
+    .recent-table { margin-top: 16px; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); }
+    th, td { padding: 11px 8px; border-bottom: 1px solid rgba(125,43,214,.22); text-align: left; }
+    th { color: var(--muted); text-transform: uppercase; font-size: 13px; }
+    td { font-weight: 900; }
+
+    .preview-card { padding: 20px; }
+    .preview-stage {
+      position: relative;
+      height: 240px;
+      border-radius: 14px;
+      overflow: hidden;
+      background:
+        linear-gradient(110deg, rgba(0,0,0,.72), rgba(0,0,0,.12)),
+        radial-gradient(circle at 70% 35%, rgba(246,200,47,.26), transparent 24%),
+        linear-gradient(135deg, #261042, #0d0614 55%, #201004);
+      border: 1px solid rgba(125,43,214,.5);
+    }
+    .preview-stage::before {
+      content: "";
+      position: absolute;
+      inset: 18px;
+      border: 1px dashed rgba(246,200,47,.3);
+      border-radius: 12px;
+    }
+    .runner-silhouette {
+      position: absolute;
+      right: 32px;
+      top: 30px;
+      font-family: var(--font-display);
+      font-size: 78px;
+      color: var(--gold);
+      transform: rotate(-12deg);
+      opacity: .92;
+    }
+    .preview-overlay {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      font-family: var(--font-display);
+      text-transform: uppercase;
+    }
+    .preview-overlay span { display: block; color: var(--purple-2); letter-spacing: 1px; }
+    .preview-overlay strong { display: block; font-size: 42px; }
+    .preview-overlay em { display: block; font-style: normal; color: var(--gold); font-size: 34px; }
+
+    .progress-track {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      margin: 16px 0 2px;
+      align-items: center;
+      text-align: center;
+      font-size: 12px;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 1000;
+    }
+    .node::before {
+      content: "";
+      display: block;
+      width: 22px;
+      height: 22px;
+      margin: 0 auto 7px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.28);
+      background: #111;
+    }
+     .node.active::before { border-color: var(--green); background: var(--green); box-shadow: 0 0 12px var(--green); }
+    .node.failed::before { border-color: var(--red); background: var(--red); box-shadow: 0 0 12px var(--red); }
+
+    .queue-list { padding: 18px 20px; margin-top: 16px; }
+    .queue-row {
+      display: grid;
+      grid-template-columns: 42px 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(125,43,214,.23);
+      font-weight: 1000;
+      cursor: grab;
+      user-select: none;
+    }
+    .queue-row:active {
+      cursor: grabbing;
+    }
+    .queue-row.dragging {
+      opacity: 0.4;
+      background: rgba(125, 43, 214, 0.1);
+      border: 1px dashed rgba(125, 43, 214, 0.5);
+    }
+    .queue-num { color: var(--purple-2); border: 1px solid var(--line); display: grid; place-items: center; height: 34px; border-radius: 6px; }
+    .queue-actions { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
+    .queue-action {
+      min-height: 32px;
+      border: 1px solid rgba(125,43,214,.45);
+      border-radius: 7px;
+      background: rgba(255,255,255,.035);
+      color: var(--white);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 1000;
+      text-transform: uppercase;
+    }
+
+    .kiosk-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(390px, .72fr);
+      gap: 22px;
+    }
+
+    .kiosk-main { padding: 34px; }
+    .kiosk-title {
+      margin: 0 0 20px;
+      text-align: center;
+      font-family: var(--font-display);
+      font-size: clamp(54px, 5vw, 100px);
+      letter-spacing: 5px;
+      text-transform: uppercase;
+      line-height: .9;
+    }
+    .kiosk-title .gold { color: var(--gold); }
+    .hint { text-align: center; color: var(--muted); text-transform: uppercase; font-weight: 1000; letter-spacing: 2px; margin-top: -10px; }
+
+    .field-label { display:block; margin: 26px 0 8px; color: var(--purple-2); text-transform: uppercase; font-weight: 1000; letter-spacing: 1px; }
+    .fake-input {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 86px;
+      padding: 0 24px;
+      border: 2px solid var(--purple);
+      border-radius: 10px;
+      background: rgba(0,0,0,.34);
+      color: #777082;
+      font-family: var(--font-display);
+      font-size: clamp(34px, 3vw, 60px);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .age-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+    .age-btn, .course-btn {
+      min-height: 88px;
+      border: 1px solid rgba(125,43,214,.7);
+      background: rgba(0,0,0,.25);
+      color: var(--white);
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      font-size: 28px;
+      cursor: pointer;
+      border-radius: 9px;
+    }
+    .age-btn small { display:block; font-family: var(--font-ui); font-size: 14px; color: var(--muted); }
+    .age-btn.selected, .course-btn.selected {
+      background: linear-gradient(180deg, var(--gold-2), var(--gold));
+      color: #100900;
+      border-color: var(--gold);
+    }
+
+    .course-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .course-btn { min-height: 116px; font-size: 34px; }
+    .course-btn small { display:block; margin-top: 4px; font-family: var(--font-ui); font-size: 15px; letter-spacing: .5px; }
+
+    .join-btn {
+      width: 100%;
+      min-height: 112px;
+      margin-top: 26px;
+      border: 0;
+      color: var(--white);
+      background: linear-gradient(90deg, #7d2bd6, #9d48f1, #5c209d);
+      font-family: var(--font-display);
+      font-size: clamp(44px, 4vw, 84px);
+      letter-spacing: 7px;
+      text-transform: uppercase;
+      cursor: pointer;
+      clip-path: polygon(4% 0, 100% 0, 96% 100%, 0 100%);
+      box-shadow: 0 0 42px rgba(125,43,214,.42);
+    }
+
+    .toast {
+      position: fixed;
+      right: 26px;
+      bottom: 26px;
+      max-width: 460px;
+      padding: 16px 20px;
+      background: rgba(8,7,12,.94);
+      border: 1px solid var(--gold);
+      box-shadow: 0 0 30px rgba(246,200,47,.22);
+      color: var(--gold);
+      font-weight: 1000;
+      transform: translateY(120px);
+      opacity: 0;
+      transition: all .25s ease;
+      z-index: 99;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 1200px) {
+      .display-grid, .admin-grid, .kiosk-grid { grid-template-columns: 1fr; }
+      .designer-grid { grid-template-columns: 1fr; }
+      .settings-row { grid-template-columns: repeat(2, 1fr); }
+      .control-row { grid-template-columns: repeat(2, 1fr); }
+      .topbar { grid-template-columns: 1fr; text-align: center; }
+      .brand, .status-row { justify-content: center; }
+    }
+
+    @media (max-width: 740px) {
+      .app-shell { padding: 14px; }
+      .info-cards, .age-grid, .course-grid { grid-template-columns: 1fr; }
+      .designer-fields, .admin-auth-row { grid-template-columns: 1fr; }
+      .settings-row, .control-row { grid-template-columns: 1fr; }
+      .timer-card { min-height: 520px; }
+      .rank-row { grid-template-columns: 32px 1fr auto; font-size: 16px; }
+      .delta { display:none; }
+    }
+  </style>
 </head>
 <body>
-    <p><a href="/admin">Open admin dashboard</a></p>
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand" aria-label="Dynasty Ninja brand">
+        <div class="logo-mark" aria-hidden="true" style="display: none;"></div>
+        <div class="brand-title">
+          <span class="dynasty">Dynasty</span>
+          <span class="ninja">Ninja</span>
+        </div>
+      </div>
+
+      <div class="headline">
+        <h1>Course Timer System</h1>
+        <p style="display: none;">Python API-ready single-page UI prototype</p>
+      </div>
+
+      <div class="status-row">
+        <div class="pill" style="display: none;"><span class="dot"></span><span id="systemStatus">All Systems Go</span></div>
+        <div class="pill" style="display: none;">TEMP <span>72 F</span></div>
+        <div class="pill">TIME <span id="clockText">12:45 PM</span></div>
+      </div>
+    </header>
+
+    <nav class="view-tabs" aria-label="UI views">
+      <button class="tab-btn" data-view="display">TV Scoreboard</button>
+      <button class="tab-btn active" data-view="admin">Admin Dashboard</button>
+      <button class="tab-btn" data-view="kiosk">Runner Check-In</button>
+    </nav>
+
+    <section id="display" class="view" aria-label="TV scoreboard display">
+      <div class="display-grid">
+        <article class="panel timer-card">
+          <div>
+            <div class="runner-label">Current Runner</div>
+            <div class="runner-name" id="displayRunner">JAXSON</div>
+          </div>
+
+          <div class="timer-value" id="displayTimer">00:18.42</div>
+
+          <div>
+            <div class="status-banner" id="displayState">Running</div>
+            <div class="info-cards">
+              <div class="panel mini-card"><div class="iconbox">CRS</div><div><small>Course</small><strong id="displayCourse">Speed<br>Gauntlet</strong></div></div>
+              <div class="panel mini-card"><div class="iconbox">AGE</div><div><small>Age Group</small><strong id="displayAge">9-11<br>Years</strong></div></div>
+              <div class="panel mini-card"><div class="iconbox">MOD</div><div><small>Event Mode</small><strong id="displayMode">Timed<br>Challenge</strong></div></div>
+            </div>
+          </div>
+        </article>
+
+        <aside class="side-stack">
+          <section class="panel leader-panel">
+            <h2 class="leader-title">Today's Best</h2>
+            <div id="todayBest"></div>
+          </section>
+          <section class="panel leader-panel">
+            <h2 class="leader-title">All-Time Best</h2>
+            <div id="allTimeBest"></div>
+          </section>
+          <section class="panel leader-panel">
+            <h2 class="leader-title">Last Runs</h2>
+            <div id="lastRuns"></div>
+          </section>
+        </aside>
+      </div>
+      <div class="bottom-ticker"><span>Be strong. Be fast. Be legendary.</span><span>Next up: <strong id="nextUp">ELLIOT</strong></span></div>
+    </section>
+
+    <section id="admin" class="view active" aria-label="Admin dashboard">
+      <div class="admin-grid">
+        <div>
+          <article class="panel control-panel">
+            <h2 class="section-title">Main Controls</h2>
+            <div class="control-row">
+              <button class="big-control arm" data-action="arm">Arm Run</button>
+              <button class="big-control start" data-action="start">Start</button>
+              <button class="big-control stop" data-action="stop">Stop</button>
+              <button class="big-control reset" data-action="reset">Reset</button>
+              <button class="big-control accept" data-action="accept">Accept</button>
+            </div>
+          </article>
+
+          <article class="panel course-admin-panel">
+            <div class="panel-heading">
+              <h2 class="section-title">Course Designer</h2>
+              <div class="admin-auth-row">
+                <input class="text-input" id="adminPinInput" type="password" inputmode="numeric" placeholder="Admin PIN" autocomplete="current-password">
+                <button class="mini-action" id="adminLoginBtn">Unlock</button>
+              </div>
+              <span class="choice" id="adminAuthStatus">Locked</span>
+            </div>
+
+            <div class="designer-grid">
+              <div>
+                <label class="form-label" for="adminCourseSelect">Course</label>
+                <select class="select-input" id="adminCourseSelect"></select>
+                <div class="course-summary" id="adminCourseSummary">No courses loaded.</div>
+                <div class="action-row">
+                  <button class="mini-action" id="newCourseBtn">New Course</button>
+                  <button class="mini-action" id="saveCourseBtn">Save Course</button>
+                  <button class="mini-action danger" id="disableCourseBtn">Disable</button>
+                </div>
+              </div>
+
+              <div class="designer-fields">
+                <label><span class="form-label">Course Name</span><input class="text-input" id="courseNameInput" placeholder="Speed Gauntlet"></label>
+                <label><span class="form-label">Slug</span><input class="text-input" id="courseSlugInput" placeholder="speed-gauntlet"></label>
+                <label class="full"><span class="form-label">Course Notes</span><textarea class="text-area" id="courseDescriptionInput" placeholder="What this course is used for"></textarea></label>
+                <label><span class="form-label">Layout Name</span><input class="text-input" id="revisionNameInput" placeholder="Week 1 Layout"></label>
+                <label><span class="form-label">Obstacle Count</span><input class="text-input" id="obstacleCountInput" type="number" min="0" step="1" placeholder="6"></label>
+                <label><span class="form-label">Start Date</span><input class="text-input" id="revisionStartInput" type="date"></label>
+                <label><span class="form-label">Leaderboard</span><select class="select-input" id="leaderboardEligibleInput"><option value="true">Eligible</option><option value="false">Practice Only</option></select></label>
+                <label class="full"><span class="form-label">Layout Design Notes</span><textarea class="text-area" id="layoutNotesInput" placeholder="List obstacles, order, rules, penalties, and sensor notes"></textarea></label>
+
+                <div class="full" id="obstacleNamesWrapper" style="display: none; margin-top: 14px; margin-bottom: 14px;">
+                  <span class="form-label">Obstacle Names</span>
+                  <div id="obstacleNamesGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;"></div>
+                </div>
+
+                <h3 class="section-title full" style="margin-top: 20px; margin-bottom: 4px;">Course Default Settings</h3>
+                <div class="settings-row full" style="margin-top: 0;">
+                  <section class="panel setting-card" id="designerModeCard">
+                    <h4 class="form-label" style="font-size: 14px; margin-bottom: 12px;">Mode</h4>
+                    <div class="choice" data-mode="OPEN_GYM">Open Gym</div>
+                    <div class="choice" data-mode="PARTY">Party</div>
+                    <div class="choice" data-mode="COMPETITION">Competition</div>
+                  </section>
+                  <section class="panel setting-card" id="designerCountdownCard">
+                    <h4 class="form-label" style="font-size: 14px; margin-bottom: 12px;">Countdown</h4>
+                    <div class="choice" data-countdown="0">Off</div>
+                    <div class="choice" data-countdown="3">3 Seconds</div>
+                    <div class="choice" data-countdown="5">5 Seconds</div>
+                    <div class="choice" data-countdown="10">10 Seconds</div>
+                  </section>
+                  <section class="panel setting-card" id="designerFalseStartCard">
+                    <h4 class="form-label" style="font-size: 14px; margin-bottom: 12px;">False Start</h4>
+                    <div class="choice" data-false-start="false">Disabled</div>
+                    <div class="choice" data-false-start="true">Enabled</div>
+                    <p style="margin: 12px 0 6px; font-size: 12px; font-weight: 1000; text-transform: uppercase; color: var(--muted);">Sensitivity</p>
+                    <div class="bars" id="designerSensitivityBars">
+                      <span data-sens="1"></span>
+                      <span data-sens="2"></span>
+                      <span data-sens="3"></span>
+                      <span data-sens="4"></span>
+                      <span data-sens="5"></span>
+                      <span data-sens="6"></span>
+                    </div>
+                  </section>
+                  <section class="panel setting-card" id="designerRelayCard">
+                    <h4 class="form-label" style="font-size: 14px; margin-bottom: 12px;">Relay / Effects</h4>
+                    <div class="choice" data-relay="relay_start_lights">Start Lights On</div>
+                    <div class="choice" data-relay="relay_finish_chime">Finish Chime On</div>
+                    <div class="choice" data-relay="relay_smoke_burst">Smoke Burst</div>
+                    <div class="choice" data-relay="relay_crowd_cheer">Crowd Cheer On</div>
+                  </section>
+                </div>
+
+                <div class="action-row full">
+                  <button class="mini-action" id="updateRevisionBtn">Update Current Layout</button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="panel recent-table">
+            <h2 class="section-title">Recent Results</h2>
+            <table>
+              <thead><tr><th>Time</th><th>Runner</th><th>Age</th><th>Course</th><th>Mode</th><th>Result</th></tr></thead>
+              <tbody id="recentTable"></tbody>
+            </table>
+          </article>
+        </div>
+
+        <aside>
+          <section class="panel preview-card">
+            <h2 class="section-title">Live Run Preview <span style="float:right;color:var(--green)">Live</span></h2>
+            <div class="preview-stage">
+              <div class="runner-silhouette">RUN</div>
+              <div class="preview-overlay"><span>Current Runner</span><strong id="previewRunner">JAXSON</strong><em id="previewTime">00:18.42</em></div>
+            </div>
+            <div class="progress-track" id="previewProgressTrack">
+              <!-- Dynamically populated -->
+            </div>
+          </section>
+          <section class="panel queue-list">
+            <h2 class="section-title">Up Next Queue</h2>
+            <div id="queueList"></div>
+          </section>
+        </aside>
+      </div>
+    </section>
+
+    <section id="kiosk" class="view" aria-label="Runner check-in kiosk">
+      <div class="kiosk-grid">
+        <article class="panel kiosk-main">
+          <h2 class="kiosk-title">Runner <span class="gold">Check-In</span></h2>
+          <p class="hint">Enter your info. Pick your challenge. Join the line.</p>
+
+          <label class="field-label">Runner Name</label>
+          <div class="fake-input" id="fakeName">Tap to enter name... <span>EDIT</span></div>
+
+          <label class="field-label">Age Group</label>
+          <div class="age-grid">
+            <button class="age-btn selected">5-8<small>Years</small></button>
+            <button class="age-btn">9-11<small>Years</small></button>
+            <button class="age-btn">12-14<small>Years</small></button>
+            <button class="age-btn">15-17<small>Years</small></button>
+            <button class="age-btn">18+<small>Years</small></button>
+          </div>
+
+          <label class="field-label">Course</label>
+          <div class="course-grid" id="courseGrid"></div>
+
+          <button class="join-btn" id="joinQueueBtn">Join Queue >></button>
+        </article>
+
+        <aside class="side-stack">
+          <section class="panel leader-panel"><h2 class="leader-title">Up Next</h2><div id="kioskQueue"></div></section>
+          <section class="panel leader-panel"><h2 class="leader-title">Leaderboard</h2><div id="kioskLeader"></div></section>
+          <section class="panel leader-panel"><h2 class="leader-title">Personal Bests</h2><div id="personalBests"></div></section>
+        </aside>
+      </div>
+    </section>
+
+
+  </main>
+
+  <div class="toast" id="toast">Action queued.</div>
+
+  <script>
+    class ApiClient {
+      constructor({ baseUrl = '/api/v1' } = {}) {
+        this.baseUrl = baseUrl;
+        this.adminToken = localStorage.getItem('adminToken') || '';
+      }
+
+      async getStatus() { return this.get('/status'); }
+      async getTimerState() { return this.get('/timer/state'); }
+      async commandTimer(action) {
+        const path = action === 'deleteLastRun' ? '/timer/delete-last-run' : `/timer/${action}`;
+        const body = action === 'stop' ? { status: 'MANUAL_STOPPED', source: 'ADMIN' } : { source: 'ADMIN' };
+        if (action === 'arm' || action === 'reset' || action === 'deleteLastRun') return this.post(path, {});
+        return this.post(path, body);
+      }
+      async getQueue() { return this.get('/queue'); }
+      async getRecentRuns(limit = 10) { return this.get(`/runs/recent?limit=${limit}`); }
+      async getTodayLeaderboard() { return this.get('/leaderboards/today?limit=10'); }
+      async getAllTimeLeaderboard() { return this.get('/leaderboards/all-time?limit=10'); }
+      async getPersonalBests() { return this.get('/leaderboards/personal-bests?limit=5'); }
+      async joinQueue(payload) { return this.post('/queue', payload); }
+      async loginAdmin(pin) {
+        const data = await this.post('/auth/login', { pin });
+        this.setAdminToken(data.token);
+        return data;
+      }
+      async getCourses() { return this.get('/courses'); }
+      async createCourse(payload) { return this.post('/courses', payload); }
+      async updateCourse(courseId, payload) { return this.patch(`/courses/${courseId}`, payload); }
+      async disableCourse(courseId) { return this.delete(`/courses/${courseId}`); }
+      async createCourseRevision(courseId, payload) {
+        return this.post(`/courses/${courseId}/revisions`, payload);
+      }
+      async updateCourseRevision(revisionId, payload) {
+        return this.patch(`/course-revisions/${revisionId}`, payload);
+      }
+      async armQueueEntry(queueEntryId) {
+        return this.post('/timer/arm', { queue_entry_id: queueEntryId });
+      }
+      async updateQueueEntry(queueEntryId, payload) {
+        return this.patch(`/queue/${queueEntryId}`, payload);
+      }
+      async cancelQueueEntry(queueEntryId) { return this.delete(`/queue/${queueEntryId}`); }
+
+      setAdminToken(token) {
+        this.adminToken = token || '';
+        if (this.adminToken) localStorage.setItem('adminToken', this.adminToken);
+        else localStorage.removeItem('adminToken');
+      }
+
+      async get(path) {
+        const response = await fetch(this.baseUrl + path);
+        return this.unwrap(response, `GET ${path}`);
+      }
+
+      async post(path, body = {}) {
+        const response = await fetch(this.baseUrl + path, {
+          method: 'POST',
+          headers: this.headers(),
+          body: JSON.stringify(body)
+        });
+        return this.unwrap(response, `POST ${path}`);
+      }
+
+      async patch(path, body = {}) {
+        const response = await fetch(this.baseUrl + path, {
+          method: 'PATCH',
+          headers: this.headers(),
+          body: JSON.stringify(body)
+        });
+        return this.unwrap(response, `PATCH ${path}`);
+      }
+
+      async delete(path) {
+        const response = await fetch(this.baseUrl + path, {
+          method: 'DELETE',
+          headers: this.headers()
+        });
+        return this.unwrap(response, `DELETE ${path}`);
+      }
+
+      headers() {
+        const headers = { 'Content-Type': 'application/json' };
+        if (this.adminToken) headers['X-Admin-Token'] = this.adminToken;
+        return headers;
+      }
+
+      async unwrap(response, label) {
+        const payload = await response.json();
+        if (!response.ok || payload.ok === false) {
+          const message = payload.error?.message || `${label} failed`;
+          throw new Error(message);
+        }
+        return Object.prototype.hasOwnProperty.call(payload, 'data') ? payload.data : payload;
+      }
+    }
+
+    const api = new ApiClient();
+    const $ = selector => document.querySelector(selector);
+    const $$ = selector => [...document.querySelectorAll(selector)];
+    const appState = {
+      timer: null,
+      queue: [],
+      recent: [],
+      today: [],
+      allTime: [],
+      personalBests: [],
+      courses: [],
+      selectedCourseId: null,
+      selectedRevisionId: null,
+      timerSyncedAt: Date.now(),
+      reconnectTimer: null,
+      ws: null
+    };
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[char]);
+    }
+
+    function formatMs(ms) {
+      if (ms === null || ms === undefined) return '00:00.00';
+      const minutes = Math.floor(ms / 60000);
+      const seconds = Math.floor((ms % 60000) / 1000);
+      const hundredths = Math.floor((ms % 1000) / 10);
+      return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(hundredths).padStart(2, '0')}`;
+    }
+
+    function titleize(value) {
+      return String(value ?? '').replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
+    }
+
+    function rowName(row) {
+      return row.runner_name || row.runner || row.name || 'Unknown';
+    }
+
+    function currentCourse() {
+      return appState.courses.find(course => String(course.id) === String(appState.selectedCourseId)) || appState.courses[0] || null;
+    }
+
+    function currentRevision(course = currentCourse()) {
+      if (!course) return null;
+      return course.open_revision || course.revisions?.[0] || null;
+    }
+
+    function selectedKioskCourse() {
+      const button = $('.course-btn.selected');
+      return appState.courses.find(course => String(course.id) === String(button?.dataset.courseId)) || appState.courses[0] || null;
+    }
+
+    function fieldValue(selector) {
+      return $(selector).value.trim();
+    }
+
+    function nullableField(selector) {
+      const value = fieldValue(selector);
+      return value ? value : null;
+    }
+
+    function numberField(selector) {
+      const value = fieldValue(selector);
+      return value ? Number(value) : null;
+    }
+
+    function renderRankRows(target, rows, options = {}) {
+      $(target).innerHTML = rows.map((row, index) => {
+        const rank = row.rank ?? index + 1;
+        const name = escapeHtml(rowName(row));
+        const time = formatMs(row.elapsed_ms);
+        const delta = row.delta_ms ? `<span class="delta">+${(row.delta_ms / 1000).toFixed(2)}</span>` : `<span class="delta best">-</span>`;
+        return `<div class="rank-row"><span class="rank">${rank}</span><span>${name}</span><span class="rank-time ${rank === 1 || options.gold ? 'gold' : ''}">${time}</span>${options.hideDelta ? '' : delta}</div>`;
+      }).join('');
+    }
+
+    function renderObstacleNameInputs(count, names = []) {
+      const wrapper = $('#obstacleNamesWrapper');
+      const grid = $('#obstacleNamesGrid');
+      if (!wrapper || !grid) return;
+
+      grid.innerHTML = '';
+      if (count <= 0) {
+        wrapper.style.display = 'none';
+        return;
+      }
+
+      wrapper.style.display = 'block';
+      for (let i = 0; i < count; i++) {
+        const val = names[i] || `Obstacle ${i + 1}`;
+        const inputId = `obstacleName_${i}`;
+        const labelText = `Obstacle ${i + 1} Name`;
+        grid.innerHTML += `
+          <div>
+            <label class="form-label" for="${inputId}">${labelText}</label>
+            <input class="text-input obstacle-name-input" id="${inputId}" placeholder="Obstacle ${i + 1}" value="${escapeHtml(val)}">
+          </div>
+        `;
+      }
+    }
+
+    async function toggleObstacle(index) {
+      if (!api.adminToken) return showToast('Please unlock with Admin PIN');
+      try {
+        const result = await api.post(`/timer/obstacles/${index}/toggle`, {});
+        appState.timer = result;
+        appState.timerSyncedAt = Date.now();
+        renderTimer();
+      } catch (error) {
+        showToast(error.message);
+      }
+    }
+
+    async function triggerFinish() {
+      if (!api.adminToken) return showToast('Please unlock with Admin PIN');
+      try {
+        const result = await api.commandTimer('finish');
+        appState.timer = result;
+        appState.timerSyncedAt = Date.now();
+        renderTimer();
+        showToast('Run finished');
+      } catch (error) {
+        showToast(error.message);
+      }
+    }
+
+    function renderProgressTrack() {
+      const track = $('#previewProgressTrack');
+      if (!track) return;
+
+      const timer = appState.timer || {};
+      const course = timer.course || {};
+
+      let count = 3;
+      let names = [];
+      let obstacleStatus = [];
+
+      const hasRunnerContext = timer.state && timer.state !== 'IDLE';
+
+      if (hasRunnerContext && course.id) {
+        count = course.obstacle_count ?? 3;
+        if (course.rules_json) {
+          try {
+            const rules = JSON.parse(course.rules_json);
+            names = rules.obstacle_names || [];
+          } catch (e) {
+            console.error(e);
+          }
+        }
+        obstacleStatus = timer.obstacle_status || [];
+      } else {
+        const curCrs = currentCourse();
+        const revision = currentRevision(curCrs);
+        if (revision) {
+          count = revision.obstacle_count ?? 3;
+          if (revision.rules_json) {
+            try {
+              const rules = JSON.parse(revision.rules_json);
+              names = rules.obstacle_names || [];
+            } catch (e) {
+              console.error(e);
+            }
+          }
+        }
+      }
+
+      while (names.length < count) {
+        names.push(`Obstacle ${names.length + 1}`);
+      }
+
+      let html = '';
+
+      const startActive = timer.state && timer.state !== 'IDLE';
+      html += `<div class="node ${startActive ? 'active' : ''}" style="cursor: default;">Start</div>`;
+
+      for (let i = 0; i < count; i++) {
+        const name = names[i] || `Obstacle ${i + 1}`;
+        const status = obstacleStatus[i] || 'pending';
+        let nodeClass = '';
+        if (status === 'passed') {
+          nodeClass = 'active';
+        } else if (status === 'failed') {
+          nodeClass = 'failed';
+        }
+
+        const canClick = hasRunnerContext;
+        const cursorStyle = canClick ? 'cursor: pointer;' : 'cursor: default;';
+        const clickAttr = canClick ? `onclick="toggleObstacle(${i})"` : '';
+
+        html += `<div class="node ${nodeClass}" style="${cursorStyle}" ${clickAttr} title="${escapeHtml(name)}">${escapeHtml(name)}</div>`;
+      }
+
+      const finishActive = timer.state === 'SAVED' || timer.state === 'MANUAL_STOPPED' || timer.state === 'DNF';
+      const finishCanClick = timer.state === 'RUNNING';
+      const finishCursor = finishCanClick ? 'cursor: pointer;' : 'cursor: default;';
+      const finishClickAttr = finishCanClick ? `onclick="triggerFinish()"` : '';
+      html += `<div class="node ${finishActive ? 'active' : ''}" style="${finishCursor}" ${finishClickAttr}>Finish</div>`;
+
+      track.style.gridTemplateColumns = `repeat(${count + 2}, 1fr)`;
+      track.innerHTML = html;
+    }
+
+    function renderTimer() {
+      const timer = appState.timer || {};
+      const runner = timer.runner || {};
+      const course = timer.course || {};
+      const mode = timer.mode || 'OPEN_GYM';
+      const runnerName = runner.name || 'No Runner Armed';
+      const age = runner.age_group || '-';
+      const courseName = course.name || 'No Course';
+
+      $('#displayRunner').textContent = runnerName.toUpperCase();
+      if (timer.state === 'COUNTDOWN') {
+        const seconds = Math.ceil((timer.countdown_remaining_ms || 0) / 1000);
+        const displayVal = seconds > 0 ? String(seconds) : 'GO!';
+        $('#displayTimer').textContent = displayVal;
+        $('#previewTime').textContent = displayVal;
+      } else {
+        $('#displayTimer').textContent = formatMs(timer.elapsed_ms);
+        $('#previewTime').textContent = formatMs(timer.elapsed_ms);
+      }
+      $('#displayState').textContent = titleize(timer.state || 'IDLE');
+      $('#displayCourse').innerHTML = escapeHtml(courseName).replace(' ', '<br>');
+      $('#displayAge').innerHTML = `${escapeHtml(age)}<br>Years`;
+      $('#displayMode').innerHTML = escapeHtml(titleize(mode)).replace(' ', '<br>');
+      $('#previewRunner').textContent = runnerName.toUpperCase();
+      renderProgressTrack();
+    }
+
+    function renderQueue() {
+      const queue = appState.queue;
+      $('#nextUp').textContent = (queue[0]?.runner_name || 'NONE').toUpperCase();
+      $('#queueList').innerHTML = queue.map((item, i) => (
+        `<div class="queue-row" draggable="true" data-entry-id="${item.id}" data-version="${item.version}"><span class="queue-num">${i + 1}</span><strong>${escapeHtml(item.runner_name)}<br><small>${escapeHtml(item.course?.name || '-')}</small></strong><span class="queue-actions"><button class="queue-action" data-queue-action="arm" data-entry-id="${item.id}">Arm</button><button class="queue-action" data-queue-action="skip" data-entry-id="${item.id}" data-version="${item.version}">Skip</button><button class="queue-action" data-queue-action="cancel" data-entry-id="${item.id}">Remove</button></span></div>`
+      )).join('');
+      $('#kioskQueue').innerHTML = queue.slice(0, 2).map((item, i) => (
+        `<div class="rank-row"><span class="rank">${i + 1}</span><span>${escapeHtml(item.runner_name)}</span><span>${escapeHtml(item.age_group || '-')} YEARS</span></div>`
+      )).join('');
+    }
+
+    function renderCourses() {
+      if (appState.courses.length && !currentCourse()) {
+        appState.selectedCourseId = appState.courses[0].id;
+      }
+      const course = currentCourse();
+      const revision = currentRevision(course);
+      appState.selectedRevisionId = revision?.id || null;
+
+      $('#adminAuthStatus').textContent = api.adminToken ? 'Unlocked' : 'Locked';
+      $('#adminAuthStatus').classList.toggle('selected', Boolean(api.adminToken));
+      $('#adminCourseSelect').innerHTML = appState.courses.map(item => (
+        `<option value="${item.id}">${escapeHtml(item.name)}</option>`
+      )).join('');
+      if (course) $('#adminCourseSelect').value = String(course.id);
+
+      $('#courseGrid').innerHTML = appState.courses.map((item, index) => {
+        const selected = course && item.id === course.id ? ' selected' : index === 0 && !course ? ' selected' : '';
+        const detail = item.open_revision?.revision_name || item.description || 'Open layout';
+        return `<button class="course-btn${selected}" data-course-id="${item.id}" data-course-slug="${escapeHtml(item.slug)}">${escapeHtml(item.name)}<small>${escapeHtml(detail)}</small></button>`;
+      }).join('');
+
+      $('#courseNameInput').value = course?.name || '';
+      $('#courseSlugInput').value = course?.slug || '';
+      $('#courseDescriptionInput').value = course?.description || '';
+      $('#revisionNameInput').value = revision?.revision_name || '';
+      $('#obstacleCountInput').value = revision?.obstacle_count ?? '';
+      $('#revisionStartInput').value = revision?.revision_start_date || '';
+      $('#leaderboardEligibleInput').value = String(revision?.leaderboard_eligible ?? true);
+      $('#layoutNotesInput').value = revision?.layout_notes || '';
+      setDesignerSettings(course);
+
+      let obstacleNames = [];
+      if (revision?.rules_json) {
+        try {
+          const rules = JSON.parse(revision.rules_json);
+          obstacleNames = rules.obstacle_names || [];
+        } catch (e) {
+          console.error("Failed to parse rules_json", e);
+        }
+      }
+      renderObstacleNameInputs(revision?.obstacle_count || 0, obstacleNames);
+
+      if (!course) {
+        $('#adminCourseSummary').textContent = 'No courses loaded.';
+        return;
+      }
+      const revisionLabel = revision ? revision.revision_name : 'No active layout';
+      const obstacleLabel = revision?.obstacle_count ? `${revision.obstacle_count} obstacles` : 'Obstacle count not set';
+      $('#adminCourseSummary').innerHTML = `<strong>${escapeHtml(course.name)}</strong><br>${escapeHtml(revisionLabel)}<br>${escapeHtml(obstacleLabel)}`;
+    }
+
+    function renderRunsAndLeaderboards() {
+      renderRankRows('#todayBest', appState.today.slice(0, 3));
+      renderRankRows('#allTimeBest', appState.allTime.slice(0, 3), { hideDelta: true, gold: true });
+      renderRankRows('#lastRuns', appState.recent.slice(0, 5));
+      renderRankRows('#kioskLeader', appState.today.slice(0, 5));
+
+      $('#recentTable').innerHTML = appState.recent.map(run => {
+        const time = run.finished_at ? new Date(run.finished_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '-';
+        return `<tr><td>${escapeHtml(time)}</td><td>${escapeHtml(run.runner_name)}</td><td>${escapeHtml(run.age_group || '-')}</td><td>${escapeHtml(run.course_name || '-')}</td><td>${escapeHtml(titleize(run.mode))}</td><td style="color:var(--gold)">${formatMs(run.elapsed_ms)}</td></tr>`;
+      }).join('');
+
+      $('#personalBests').innerHTML = appState.personalBests.map(pb => (
+        `<div class="rank-row"><span class="delta best">PB</span><span>${escapeHtml(rowName(pb))}</span><span class="rank-time">${formatMs(pb.elapsed_ms)}</span><span>${escapeHtml(pb.finished_at ? new Date(pb.finished_at).toLocaleDateString() : 'ALL TIME')}</span></div>`
+      )).join('');
+    }
+
+    function renderAllFromState() {
+      renderTimer();
+      renderCourses();
+      renderQueue();
+      renderRunsAndLeaderboards();
+    }
+
+    async function renderAll() {
+      const [status, timer, courses, queue, recent, today, allTime, personalBests] = await Promise.all([
+        api.getStatus(),
+        api.getTimerState(),
+        api.getCourses(),
+        api.getQueue(),
+        api.getRecentRuns(),
+        api.getTodayLeaderboard(),
+        api.getAllTimeLeaderboard(),
+        api.getPersonalBests()
+      ]);
+      appState.timer = timer;
+      appState.courses = courses;
+      appState.selectedCourseId = appState.selectedCourseId || courses[0]?.id || null;
+      appState.queue = queue;
+      appState.recent = recent;
+      appState.today = today;
+      appState.allTime = allTime;
+      appState.personalBests = personalBests;
+      appState.timerSyncedAt = Date.now();
+      $('#systemStatus').textContent = status.app?.status ? titleize(status.app.status) : 'Running';
+      renderAllFromState();
+    }
+
+    async function refreshCourses() {
+      appState.courses = await api.getCourses();
+      if (!currentCourse()) appState.selectedCourseId = appState.courses[0]?.id || null;
+      renderCourses();
+    }
+
+    async function refreshQueue() {
+      appState.queue = await api.getQueue();
+      renderQueue();
+    }
+
+    async function refreshRuns() {
+      appState.recent = await api.getRecentRuns();
+      renderRunsAndLeaderboards();
+    }
+
+    async function refreshLeaderboards() {
+      const [today, allTime, personalBests] = await Promise.all([
+        api.getTodayLeaderboard(),
+        api.getAllTimeLeaderboard(),
+        api.getPersonalBests()
+      ]);
+      appState.today = today;
+      appState.allTime = allTime;
+      appState.personalBests = personalBests;
+      renderRunsAndLeaderboards();
+    }
+
+    function showToast(message) {
+      const toast = $('#toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(window.toastTimer);
+      window.toastTimer = setTimeout(() => toast.classList.remove('show'), 2300);
+    }
+
+    function activateView(viewName) {
+      const button = $(`.tab-btn[data-view="${viewName}"]`);
+      const view = $('#' + viewName);
+      if (!button || !view) return;
+
+      $$('.tab-btn').forEach(x => x.classList.remove('active'));
+      $$('.view').forEach(x => x.classList.remove('active'));
+      button.classList.add('active');
+      view.classList.add('active');
+    }
+
+    function coursePayload() {
+      const modeBtn = $('#designerModeCard .choice.selected');
+      const default_mode = modeBtn ? modeBtn.dataset.mode : 'OPEN_GYM';
+
+      const countdownBtn = $('#designerCountdownCard .choice.selected');
+      const countdown_seconds = countdownBtn ? Number(countdownBtn.dataset.countdown) : 3;
+
+      const falseStartBtn = $('#designerFalseStartCard .choice[data-false-start].selected');
+      const false_start_enabled = falseStartBtn ? (falseStartBtn.dataset.falseStart === 'true') : true;
+
+      const activeBars = $$('#designerSensitivityBars span.on').length;
+      const false_start_sensitivity = activeBars || 5;
+
+      const relay_start_lights = $('#designerRelayCard .choice[data-relay="relay_start_lights"]').classList.contains('selected');
+      const relay_finish_chime = $('#designerRelayCard .choice[data-relay="relay_finish_chime"]').classList.contains('selected');
+      const relay_smoke_burst = $('#designerRelayCard .choice[data-relay="relay_smoke_burst"]').classList.contains('selected');
+      const relay_crowd_cheer = $('#designerRelayCard .choice[data-relay="relay_crowd_cheer"]').classList.contains('selected');
+
+      const obstacleNames = $$('.obstacle-name-input').map(input => input.value.trim() || input.placeholder);
+
+      return {
+        name: fieldValue('#courseNameInput'),
+        slug: nullableField('#courseSlugInput'),
+        description: nullableField('#courseDescriptionInput'),
+        default_mode,
+        countdown_seconds,
+        false_start_enabled,
+        false_start_sensitivity,
+        relay_start_lights,
+        relay_finish_chime,
+        relay_smoke_burst,
+        relay_crowd_cheer,
+        rules_json: JSON.stringify({ obstacle_names: obstacleNames })
+      };
+    }
+
+    function revisionPayload(closeCurrentRevision = true) {
+      const obstacleNames = $$('.obstacle-name-input').map(input => input.value.trim() || input.placeholder);
+      return {
+        revision_name: fieldValue('#revisionNameInput'),
+        revision_start_date: nullableField('#revisionStartInput'),
+        obstacle_count: numberField('#obstacleCountInput'),
+        layout_notes: nullableField('#layoutNotesInput'),
+        leaderboard_eligible: $('#leaderboardEligibleInput').value === 'true',
+        close_current_revision: closeCurrentRevision,
+        rules_json: JSON.stringify({ obstacle_names: obstacleNames })
+      };
+    }
+
+    function setDesignerSettings(settings = {}) {
+      const defaultMode = settings.default_mode || 'OPEN_GYM';
+      $$('#designerModeCard .choice').forEach(x => {
+        x.classList.toggle('selected', x.dataset.mode === defaultMode);
+      });
+
+      const countdownSec = settings.countdown_seconds ?? 3;
+      $$('#designerCountdownCard .choice').forEach(x => {
+        x.classList.toggle('selected', Number(x.dataset.countdown) === countdownSec);
+      });
+
+      const falseStartEnabled = settings.false_start_enabled ?? true;
+      $$('#designerFalseStartCard .choice[data-false-start]').forEach(x => {
+        const isTrue = x.dataset.falseStart === 'true';
+        x.classList.toggle('selected', isTrue === falseStartEnabled);
+      });
+
+      const falseStartSens = settings.false_start_sensitivity ?? 5;
+      $$('#designerSensitivityBars span').forEach(el => {
+        const val = Number(el.dataset.sens);
+        el.classList.toggle('on', val <= falseStartSens);
+      });
+
+      const startLights = settings.relay_start_lights ?? true;
+      const finishChime = settings.relay_finish_chime ?? true;
+      const smokeBurst = settings.relay_smoke_burst ?? false;
+      const crowdCheer = settings.relay_crowd_cheer ?? true;
+
+      $('#designerRelayCard .choice[data-relay="relay_start_lights"]').classList.toggle('selected', startLights);
+      $('#designerRelayCard .choice[data-relay="relay_finish_chime"]').classList.toggle('selected', finishChime);
+      $('#designerRelayCard .choice[data-relay="relay_smoke_burst"]').classList.toggle('selected', smokeBurst);
+      $('#designerRelayCard .choice[data-relay="relay_crowd_cheer"]').classList.toggle('selected', crowdCheer);
+    }
+
+    function clearDesignerForNewCourse() {
+      appState.selectedCourseId = null;
+      appState.selectedRevisionId = null;
+      $('#adminCourseSelect').value = '';
+      $('#courseNameInput').value = '';
+      $('#courseSlugInput').value = '';
+      $('#courseDescriptionInput').value = '';
+      $('#revisionNameInput').value = '';
+      $('#obstacleCountInput').value = '';
+      $('#revisionStartInput').value = new Date().toISOString().slice(0, 10);
+      $('#leaderboardEligibleInput').value = 'true';
+      $('#layoutNotesInput').value = '';
+      setDesignerSettings();
+      renderObstacleNameInputs(0);
+      $('#adminCourseSummary').textContent = 'Design a new course and save it to make it available.';
+    }
+
+    const initialView = location.pathname.replace(/^\/+/, '') || 'admin';
+    activateView(initialView);
+
+    $$('.tab-btn').forEach(button => {
+      button.addEventListener('click', () => {
+        activateView(button.dataset.view);
+      });
+    });
+
+    $$('.big-control').forEach(button => {
+      button.addEventListener('click', async () => {
+        const action = button.dataset.action;
+        try {
+          const result = await api.commandTimer(action);
+          appState.timer = result;
+          appState.timerSyncedAt = Date.now();
+          renderTimer();
+          if (action === 'accept') {
+            await Promise.all([refreshQueue(), refreshRuns(), refreshLeaderboards()]);
+          }
+          showToast(`Timer ${titleize(action)} -> ${titleize(result.state)}`);
+        } catch (error) {
+          showToast(error.message);
+        }
+      });
+    });
+
+    $$('.age-btn').forEach(button => button.addEventListener('click', () => {
+      $$('.age-btn').forEach(x => x.classList.remove('selected'));
+      button.classList.add('selected');
+    }));
+
+    $('#courseGrid').addEventListener('click', event => {
+      const button = event.target.closest('.course-btn');
+      if (!button) return;
+      appState.selectedCourseId = Number(button.dataset.courseId);
+      $$('.course-btn').forEach(x => x.classList.remove('selected'));
+      button.classList.add('selected');
+      renderCourses();
+    });
+
+    $('#queueList').addEventListener('click', async event => {
+      const button = event.target.closest('[data-queue-action]');
+      if (!button) return;
+      const entryId = Number(button.dataset.entryId);
+      const action = button.dataset.queueAction;
+      try {
+        if (action === 'arm') {
+          const result = await api.armQueueEntry(entryId);
+          appState.timer = result;
+          appState.timerSyncedAt = Date.now();
+          renderTimer();
+        } else if (action === 'skip') {
+          await api.updateQueueEntry(entryId, {
+            request_id: `admin-skip-${Date.now()}`,
+            version: Number(button.dataset.version),
+            status: 'SKIPPED'
+          });
+        } else if (action === 'cancel') {
+          await api.cancelQueueEntry(entryId);
+        }
+        await refreshQueue();
+        showToast(`Queue ${titleize(action)} complete`);
+      } catch (error) {
+        showToast(error.message);
+      }
+    });
+
+    $('#adminLoginBtn').addEventListener('click', async () => {
+      try {
+        await api.loginAdmin($('#adminPinInput').value);
+        $('#adminPinInput').value = '';
+        renderCourses();
+        showToast('Admin unlocked');
+      } catch (error) {
+        showToast(error.message);
+      }
+    });
+
+    $('#adminCourseSelect').addEventListener('change', () => {
+      appState.selectedCourseId = Number($('#adminCourseSelect').value);
+      renderCourses();
+      renderProgressTrack();
+    });
+
+    $('#obstacleCountInput').addEventListener('input', () => {
+      const count = Number($('#obstacleCountInput').value) || 0;
+      const currentInputs = $$('.obstacle-name-input').map(input => input.value.trim());
+      renderObstacleNameInputs(count, currentInputs);
+    });
+
+    // Add Course Designer settings click listeners
+    $('#designerModeCard').addEventListener('click', event => {
+      const choice = event.target.closest('.choice');
+      if (!choice) return;
+      $$('#designerModeCard .choice').forEach(x => x.classList.remove('selected'));
+      choice.classList.add('selected');
+    });
+
+    $('#designerCountdownCard').addEventListener('click', event => {
+      const choice = event.target.closest('.choice');
+      if (!choice) return;
+      $$('#designerCountdownCard .choice').forEach(x => x.classList.remove('selected'));
+      choice.classList.add('selected');
+    });
+
+    $('#designerFalseStartCard').addEventListener('click', event => {
+      const choice = event.target.closest('.choice[data-false-start]');
+      if (choice) {
+        $$('#designerFalseStartCard .choice[data-false-start]').forEach(x => x.classList.remove('selected'));
+        choice.classList.add('selected');
+      }
+    });
+
+    $('#designerSensitivityBars').addEventListener('click', event => {
+      const bar = event.target.closest('span');
+      if (!bar) return;
+      const sens = Number(bar.dataset.sens);
+      $$('#designerSensitivityBars span').forEach(el => {
+        const val = Number(el.dataset.sens);
+        el.classList.toggle('on', val <= sens);
+      });
+    });
+
+    $('#designerRelayCard').addEventListener('click', event => {
+      const choice = event.target.closest('.choice');
+      if (!choice) return;
+      choice.classList.toggle('selected');
+    });
+
+    $('#newCourseBtn').addEventListener('click', clearDesignerForNewCourse);
+
+    $('#saveCourseBtn').addEventListener('click', async () => {
+      try {
+        if (appState.selectedCourseId) {
+          await api.updateCourse(appState.selectedCourseId, coursePayload());
+          showToast('Course saved');
+        } else {
+          const payload = {
+            ...coursePayload(),
+            first_revision_name: fieldValue('#revisionNameInput') || null,
+            revision_start_date: nullableField('#revisionStartInput'),
+            layout_notes: nullableField('#layoutNotesInput'),
+            obstacle_count: numberField('#obstacleCountInput')
+          };
+          const created = await api.createCourse(payload);
+          appState.selectedCourseId = created.id;
+          showToast('Course created');
+        }
+        await refreshCourses();
+      } catch (error) {
+        showToast(error.message);
+      }
+    });
+
+    $('#disableCourseBtn').addEventListener('click', async () => {
+      if (!appState.selectedCourseId || !confirm('Disable this course?')) return;
+      try {
+        await api.disableCourse(appState.selectedCourseId);
+        appState.selectedCourseId = null;
+        await refreshCourses();
+        showToast('Course disabled');
+      } catch (error) {
+        showToast(error.message);
+      }
+    });
+
+    $('#updateRevisionBtn').addEventListener('click', async () => {
+      if (!appState.selectedRevisionId) {
+        showToast('No active layout selected');
+        return;
+      }
+      try {
+        const payload = revisionPayload(false);
+        delete payload.close_current_revision;
+        await api.updateCourseRevision(appState.selectedRevisionId, payload);
+        await refreshCourses();
+        showToast('Layout updated');
+      } catch (error) {
+        showToast(error.message);
+      }
+    });
+
+    $('#fakeName').addEventListener('click', () => {
+      const name = prompt('Runner name', 'RILEY');
+      if (name) $('#fakeName').innerHTML = `${name.toUpperCase()} <span>EDIT</span>`;
+    });
+
+    $('#joinQueueBtn').addEventListener('click', async () => {
+      const raw = $('#fakeName').textContent.replace('EDIT', '').trim();
+      const name = raw.startsWith('Tap') ? 'RILEY' : raw;
+      const age = $('.age-btn.selected').childNodes[0].textContent.trim();
+      const course = selectedKioskCourse();
+      try {
+        await api.joinQueue({
+          request_id: `kiosk-${Date.now()}`,
+          name,
+          age_group: age,
+          course_slug: course?.slug
+        });
+        showToast(`${name.toUpperCase()} joined the queue`);
+        await refreshQueue();
+      } catch (error) {
+        showToast(error.message);
+      }
+    });
+
+    function tickClock() {
+      const now = new Date();
+      $('#clockText').textContent = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    }
+
+    function animateTimer() {
+      const timer = appState.timer;
+      if (timer?.state === 'RUNNING') {
+        const baseline = Number(timer.elapsed_ms || 0);
+        let elapsed = baseline + (Date.now() - appState.timerSyncedAt);
+        if (timer.started_at) {
+          const startedAt = Date.parse(timer.started_at);
+          if (!Number.isNaN(startedAt)) elapsed = Date.now() - startedAt;
+        }
+        $('#displayTimer').textContent = formatMs(Math.max(0, elapsed));
+        $('#previewTime').textContent = formatMs(Math.max(0, elapsed));
+      } else if (timer?.state === 'COUNTDOWN') {
+        const remainingMs = Number(timer.countdown_remaining_ms || 0);
+        const elapsedSinceSync = Date.now() - appState.timerSyncedAt;
+        const currentRemaining = Math.max(0, remainingMs - elapsedSinceSync);
+        const seconds = Math.ceil(currentRemaining / 1000);
+        const displayVal = seconds > 0 ? String(seconds) : 'GO!';
+        $('#displayTimer').textContent = displayVal;
+        $('#previewTime').textContent = displayVal;
+      }
+    }
+
+    function connectLiveUpdates() {
+      const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const ws = new WebSocket(`${protocol}//${location.host}/api/v1/ws/live`);
+      appState.ws = ws;
+
+      ws.addEventListener('open', () => {
+        $('#systemStatus').textContent = 'Live Connected';
+      });
+
+      ws.addEventListener('message', async event => {
+        const message = JSON.parse(event.data);
+        if (message.type === 'timer.state') {
+          appState.timer = message.data;
+          appState.timerSyncedAt = Date.now();
+          renderTimer();
+        } else if (message.type === 'queue.updated') {
+          await refreshQueue();
+        } else if (message.type === 'run.saved') {
+          await refreshRuns();
+        } else if (message.type === 'leaderboard.updated') {
+          await refreshLeaderboards();
+        } else if (message.type === 'courses.updated') {
+          await refreshCourses();
+        } else if (message.type === 'system.toast' && message.data?.message) {
+          showToast(message.data.message);
+        }
+      });
+
+      ws.addEventListener('close', () => {
+        $('#systemStatus').textContent = 'Reconnecting';
+        clearTimeout(appState.reconnectTimer);
+        appState.reconnectTimer = setTimeout(connectLiveUpdates, 1500);
+      });
+
+      ws.addEventListener('error', () => {
+        ws.close();
+      });
+    }
+
+    function initQueueDragAndDrop() {
+      const queueList = $('#queueList');
+      if (!queueList) return;
+
+      let dragSourceEl = null;
+
+      queueList.addEventListener('dragstart', event => {
+        const row = event.target.closest('.queue-row');
+        if (!row) return;
+        dragSourceEl = row;
+        row.classList.add('dragging');
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', row.dataset.entryId);
+      });
+
+      queueList.addEventListener('dragover', event => {
+        event.preventDefault();
+        const row = event.target.closest('.queue-row');
+        if (!row || row === dragSourceEl) return;
+
+        const rect = row.getBoundingClientRect();
+        const next = (event.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
+
+        queueList.insertBefore(dragSourceEl, next ? row.nextSibling : row);
+      });
+
+      queueList.addEventListener('dragend', event => {
+        const row = event.target.closest('.queue-row');
+        if (row) {
+          row.classList.remove('dragging');
+        }
+        $$('.queue-row').forEach(el => el.classList.remove('dragging'));
+      });
+
+      queueList.addEventListener('drop', async event => {
+        event.preventDefault();
+        const newOrderIds = $$('#queueList .queue-row').map(el => Number(el.dataset.entryId));
+        try {
+          await api.post('/queue/reorder', { queue_entry_ids: newOrderIds });
+          showToast('Queue reordered');
+          await refreshQueue();
+        } catch (error) {
+          showToast(error.message);
+          await refreshQueue();
+        }
+      });
+    }
+
+    tickClock();
+    renderAll().catch(error => showToast(error.message));
+    connectLiveUpdates();
+    initQueueDragAndDrop();
+    setInterval(tickClock, 10_000);
+    setInterval(animateTimer, 100);
+  </script>
 </body>
 </html>

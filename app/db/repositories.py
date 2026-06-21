@@ -1,4 +1,5 @@
 """Repository helpers for database-backed timer workflows."""
+
 from datetime import UTC, datetime
 from typing import Any
 
@@ -9,7 +10,10 @@ from app.db.models import (
     AdminAuditLog,
     Course,
     CourseRevision,
+    HardwareDevice,
+    HardwareEvent,
     QueueEntry,
+    RelayAction,
     Run,
     SessionModel,
     Setting,
@@ -55,12 +59,33 @@ class CourseRepository:
         )
         return list(self.db.scalars(statement))
 
-    def create(self, slug: str, name: str, description: str | None = None) -> Course:
+    def create(
+        self,
+        slug: str,
+        name: str,
+        description: str | None = None,
+        default_mode: str = "OPEN_GYM",
+        countdown_seconds: int = 3,
+        false_start_enabled: bool = True,
+        false_start_sensitivity: int = 5,
+        relay_start_lights: bool = True,
+        relay_finish_chime: bool = True,
+        relay_smoke_burst: bool = False,
+        relay_crowd_cheer: bool = True,
+    ) -> Course:
         now = utc_now()
         course = Course(
             slug=slug,
             name=name,
             description=description,
+            default_mode=default_mode,
+            countdown_seconds=countdown_seconds,
+            false_start_enabled=false_start_enabled,
+            false_start_sensitivity=false_start_sensitivity,
+            relay_start_lights=relay_start_lights,
+            relay_finish_chime=relay_finish_chime,
+            relay_smoke_burst=relay_smoke_burst,
+            relay_crowd_cheer=relay_crowd_cheer,
             active=True,
             created_at=now,
             updated_at=now,
@@ -345,6 +370,49 @@ class QueueRepository:
         self.db.flush()
         return entry
 
+    def move_to_bottom(self, entry: QueueEntry) -> None:
+        statement = select(func.max(QueueEntry.sort_key)).where(
+            QueueEntry.session_id == entry.session_id,
+            QueueEntry.status.in_(["WAITING", "CALLED", "ACTIVE"]),
+            QueueEntry.id != entry.id,
+        )
+        max_sort_key = self.db.scalar(statement)
+        if max_sort_key is None:
+            max_sort_key = 0
+        entry.sort_key = max_sort_key + 1000
+
+        statement_pos = select(func.max(QueueEntry.position)).where(
+            QueueEntry.session_id == entry.session_id,
+            QueueEntry.status.in_(["WAITING", "CALLED", "ACTIVE"]),
+            QueueEntry.id != entry.id,
+        )
+        max_pos = self.db.scalar(statement_pos)
+        if max_pos is None:
+            max_pos = 0
+        entry.position = max_pos + 1
+
+    def reorder_queue(self, queue_entry_ids: list[int]) -> list[QueueEntry]:
+        statement = select(QueueEntry).where(
+            QueueEntry.id.in_(queue_entry_ids),
+            QueueEntry.status.in_(["WAITING", "CALLED", "ACTIVE"]),
+        )
+        entries = list(self.db.scalars(statement))
+        entry_map = {entry.id: entry for entry in entries}
+
+        updated_entries = []
+        current_pos = 1
+        for entry_id in queue_entry_ids:
+            entry = entry_map.get(entry_id)
+            if entry is not None:
+                entry.position = current_pos
+                entry.sort_key = current_pos * 1000
+                entry.version += 1
+                current_pos += 1
+                updated_entries.append(entry)
+
+        self.db.flush()
+        return updated_entries
+
     def update(
         self,
         entry: QueueEntry,
@@ -361,15 +429,18 @@ class QueueRepository:
             entry.position = position
             entry.sort_key = position * 1000
         if status is not None:
-            entry.status = status
-            if status == "CANCELLED":
-                entry.cancelled_at = now
-            elif status == "SKIPPED":
+            if status == "SKIPPED":
+                entry.status = "WAITING"
                 entry.skipped_at = now
-            elif status == "COMPLETED":
-                entry.completed_at = now
-            elif status == "ACTIVE":
-                entry.started_at = now
+                self.move_to_bottom(entry)
+            else:
+                entry.status = status
+                if status == "CANCELLED":
+                    entry.cancelled_at = now
+                elif status == "COMPLETED":
+                    entry.completed_at = now
+                elif status == "ACTIVE":
+                    entry.started_at = now
         entry.version += 1
         self.db.flush()
         return entry
@@ -440,10 +511,7 @@ class RunRepository:
 
     def most_recent(self) -> Run | None:
         return self.db.scalar(
-            select(Run)
-            .where(Run.deleted_at.is_(None))
-            .order_by(Run.created_at.desc())
-            .limit(1)
+            select(Run).where(Run.deleted_at.is_(None)).order_by(Run.created_at.desc()).limit(1)
         )
 
     def update(self, run: Run, **values: Any) -> Run:
@@ -554,6 +622,193 @@ class SettingsRepository:
         setting.updated_by = updated_by
         self.db.flush()
         return setting
+
+
+class HardwareRepository:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def get_device_by_key(self, device_key: str) -> HardwareDevice | None:
+        return self.db.scalar(select(HardwareDevice).where(HardwareDevice.device_key == device_key))
+
+    def ensure_device(
+        self,
+        *,
+        device_key: str,
+        display_name: str,
+        device_type: str,
+        transport: str,
+        config_json: str | None = None,
+    ) -> HardwareDevice:
+        existing = self.get_device_by_key(device_key)
+        now = utc_now()
+        if existing is not None:
+            existing.display_name = display_name
+            existing.device_type = device_type
+            existing.transport = transport
+            existing.active = True
+            existing.last_seen_at = now
+            existing.health_status = "ONLINE"
+            existing.updated_at = now
+            self.db.flush()
+            return existing
+
+        device = HardwareDevice(
+            device_key=device_key,
+            display_name=display_name,
+            device_type=device_type,
+            transport=transport,
+            config_json=config_json,
+            active=True,
+            last_seen_at=now,
+            last_sequence_number=None,
+            health_status="ONLINE",
+            created_at=now,
+            updated_at=now,
+        )
+        self.db.add(device)
+        self.db.flush()
+        return device
+
+    def list_devices(self) -> list[HardwareDevice]:
+        return list(self.db.scalars(select(HardwareDevice).order_by(HardwareDevice.display_name)))
+
+    def is_duplicate_sequence(
+        self,
+        device: HardwareDevice | None,
+        sequence_number: int | None,
+    ) -> bool:
+        return (
+            device is not None
+            and sequence_number is not None
+            and device.last_sequence_number is not None
+            and sequence_number <= device.last_sequence_number
+        )
+
+    def mark_device_seen(
+        self,
+        device: HardwareDevice,
+        *,
+        sequence_number: int | None = None,
+        health_status: str = "ONLINE",
+    ) -> None:
+        device.last_seen_at = utc_now()
+        if sequence_number is not None:
+            device.last_sequence_number = sequence_number
+        device.health_status = health_status
+        device.updated_at = utc_now()
+        self.db.flush()
+
+    def record_event(
+        self,
+        *,
+        device_id: int | None,
+        transport: str,
+        event_type: str,
+        input_key: str | None,
+        state: str | None,
+        sequence_number: int | None,
+        raw_payload: str,
+        parsed_json: str | None,
+        received_monotonic_ns: int | None,
+        process_status: str = "PENDING",
+        process_error: str | None = None,
+    ) -> HardwareEvent:
+        event = HardwareEvent(
+            event_id=None,
+            device_id=device_id,
+            transport=transport,
+            event_type=event_type,
+            input_key=input_key,
+            state=state,
+            sequence_number=sequence_number,
+            raw_payload=raw_payload,
+            parsed_json=parsed_json,
+            received_at=utc_now(),
+            received_monotonic_ns=received_monotonic_ns,
+            processed_at=None,
+            process_status=process_status,
+            process_error=process_error,
+            retry_count=0,
+            run_id=None,
+        )
+        self.db.add(event)
+        self.db.flush()
+        return event
+
+    def mark_event_processed(
+        self,
+        event: HardwareEvent,
+        *,
+        status: str,
+        error: str | None = None,
+        run_id: int | None = None,
+    ) -> HardwareEvent:
+        event.process_status = status
+        event.process_error = error
+        event.run_id = run_id
+        event.processed_at = utc_now()
+        self.db.flush()
+        return event
+
+
+class RelayRepository:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def create(
+        self,
+        *,
+        action_id: str,
+        device_id: int | None,
+        action_key: str,
+        command: str,
+        requested_by: str,
+        run_id: int | None = None,
+        status: str = "PENDING",
+    ) -> RelayAction:
+        action = RelayAction(
+            action_id=action_id,
+            device_id=device_id,
+            action_key=action_key,
+            command=command,
+            requested_by=requested_by,
+            run_id=run_id,
+            status=status,
+            requested_at=utc_now(),
+            sent_at=None,
+            acknowledged_at=None,
+            retry_count=0,
+            raw_response=None,
+            error=None,
+        )
+        self.db.add(action)
+        self.db.flush()
+        return action
+
+    def mark_sent(
+        self,
+        action: RelayAction,
+        *,
+        raw_response: str | None = None,
+        acknowledged: bool = False,
+    ) -> RelayAction:
+        action.status = "ACKNOWLEDGED" if acknowledged else "SENT"
+        action.sent_at = utc_now()
+        action.acknowledged_at = utc_now() if acknowledged else None
+        action.raw_response = raw_response
+        self.db.flush()
+        return action
+
+    def mark_failed(self, action: RelayAction, error: str) -> RelayAction:
+        action.status = "FAILED"
+        action.error = error
+        self.db.flush()
+        return action
+
+    def recent(self, limit: int = 50) -> list[RelayAction]:
+        statement = select(RelayAction).order_by(RelayAction.requested_at.desc()).limit(limit)
+        return list(self.db.scalars(statement))
 
 
 class SystemEventRepository:

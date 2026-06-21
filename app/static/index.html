@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -431,7 +431,7 @@
 
     .settings-row {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 14px;
       margin-top: 16px;
     }
@@ -646,6 +646,16 @@
       padding: 12px 0;
       border-bottom: 1px solid rgba(125,43,214,.23);
       font-weight: 1000;
+      cursor: grab;
+      user-select: none;
+    }
+    .queue-row:active {
+      cursor: grabbing;
+    }
+    .queue-row.dragging {
+      opacity: 0.4;
+      background: rgba(125, 43, 214, 0.1);
+      border: 1px dashed rgba(125, 43, 214, 0.5);
     }
     .queue-num { color: var(--purple-2); border: 1px solid var(--line); display: grid; place-items: center; height: 34px; border-radius: 6px; }
     .queue-actions { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
@@ -778,7 +788,7 @@
   <main class="app-shell">
     <header class="topbar">
       <div class="brand" aria-label="Dynasty Ninja brand">
-        <div class="logo-mark" aria-hidden="true"></div>
+        <div class="logo-mark" aria-hidden="true" style="display: none;"></div>
         <div class="brand-title">
           <span class="dynasty">Dynasty</span>
           <span class="ninja">Ninja</span>
@@ -787,12 +797,12 @@
 
       <div class="headline">
         <h1>Course Timer System</h1>
-        <p>Python API-ready single-page UI prototype</p>
+        <p style="display: none;">Python API-ready single-page UI prototype</p>
       </div>
 
       <div class="status-row">
-        <div class="pill"><span class="dot"></span><span id="systemStatus">All Systems Go</span></div>
-        <div class="pill">TEMP <span>72 F</span></div>
+        <div class="pill" style="display: none;"><span class="dot"></span><span id="systemStatus">All Systems Go</span></div>
+        <div class="pill" style="display: none;">TEMP <span>72 F</span></div>
         <div class="pill">TIME <span id="clockText">12:45 PM</span></div>
       </div>
     </header>
@@ -852,7 +862,6 @@
               <button class="big-control start" data-action="start">Start</button>
               <button class="big-control stop" data-action="stop">Stop</button>
               <button class="big-control reset" data-action="reset">Reset</button>
-              <button class="big-control delete" data-action="deleteLastRun">Delete Last</button>
             </div>
           </article>
 
@@ -887,43 +896,51 @@
                 <label><span class="form-label">Start Date</span><input class="text-input" id="revisionStartInput" type="date"></label>
                 <label><span class="form-label">Leaderboard</span><select class="select-input" id="leaderboardEligibleInput"><option value="true">Eligible</option><option value="false">Practice Only</option></select></label>
                 <label class="full"><span class="form-label">Layout Design Notes</span><textarea class="text-area" id="layoutNotesInput" placeholder="List obstacles, order, rules, penalties, and sensor notes"></textarea></label>
+
+                <h3 class="section-title full" style="margin-top: 20px; margin-bottom: 4px;">Course Default Settings</h3>
+                <div class="settings-row full" style="margin-top: 0;">
+                  <section class="panel setting-card" id="designerModeCard">
+                    <h4 class="form-label" style="font-size: 14px; margin-bottom: 12px;">Mode</h4>
+                    <div class="choice" data-mode="OPEN_GYM">Open Gym</div>
+                    <div class="choice" data-mode="PARTY">Party</div>
+                    <div class="choice" data-mode="COMPETITION">Competition</div>
+                  </section>
+                  <section class="panel setting-card" id="designerCountdownCard">
+                    <h4 class="form-label" style="font-size: 14px; margin-bottom: 12px;">Countdown</h4>
+                    <div class="choice" data-countdown="0">Off</div>
+                    <div class="choice" data-countdown="3">3 Seconds</div>
+                    <div class="choice" data-countdown="5">5 Seconds</div>
+                    <div class="choice" data-countdown="10">10 Seconds</div>
+                  </section>
+                  <section class="panel setting-card" id="designerFalseStartCard">
+                    <h4 class="form-label" style="font-size: 14px; margin-bottom: 12px;">False Start</h4>
+                    <div class="choice" data-false-start="false">Disabled</div>
+                    <div class="choice" data-false-start="true">Enabled</div>
+                    <p style="margin: 12px 0 6px; font-size: 12px; font-weight: 1000; text-transform: uppercase; color: var(--muted);">Sensitivity</p>
+                    <div class="bars" id="designerSensitivityBars">
+                      <span data-sens="1"></span>
+                      <span data-sens="2"></span>
+                      <span data-sens="3"></span>
+                      <span data-sens="4"></span>
+                      <span data-sens="5"></span>
+                      <span data-sens="6"></span>
+                    </div>
+                  </section>
+                  <section class="panel setting-card" id="designerRelayCard">
+                    <h4 class="form-label" style="font-size: 14px; margin-bottom: 12px;">Relay / Effects</h4>
+                    <div class="choice" data-relay="relay_start_lights">Start Lights On</div>
+                    <div class="choice" data-relay="relay_finish_chime">Finish Chime On</div>
+                    <div class="choice" data-relay="relay_smoke_burst">Smoke Burst</div>
+                    <div class="choice" data-relay="relay_crowd_cheer">Crowd Cheer On</div>
+                  </section>
+                </div>
+
                 <div class="action-row full">
-                  <button class="mini-action" id="newRevisionBtn">Save New Layout</button>
                   <button class="mini-action" id="updateRevisionBtn">Update Current Layout</button>
                 </div>
               </div>
             </div>
           </article>
-
-          <div class="settings-row">
-            <section class="panel setting-card">
-              <h3 class="section-title">Mode</h3>
-              <div class="choice selected">Open Gym</div>
-              <div class="choice">Party</div>
-              <div class="choice">Competition</div>
-            </section>
-            <section class="panel setting-card">
-              <h3 class="section-title">Countdown</h3>
-              <div class="choice">Off</div>
-              <div class="choice selected">3 Seconds</div>
-              <div class="choice">5 Seconds</div>
-              <div class="choice">10 Seconds</div>
-            </section>
-            <section class="panel setting-card">
-              <h3 class="section-title">False Start</h3>
-              <div class="choice">Disabled</div>
-              <div class="choice selected">Enabled</div>
-              <p>Sensitivity</p>
-              <div class="bars"><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span></span></div>
-            </section>
-            <section class="panel setting-card">
-              <h3 class="section-title">Relay / Effects</h3>
-              <div class="choice selected">Start Lights On</div>
-              <div class="choice selected">Finish Chime On</div>
-              <div class="choice">Smoke Burst</div>
-              <div class="choice selected">Crowd Cheer On</div>
-            </section>
-          </div>
 
           <article class="panel recent-table">
             <h2 class="section-title">Recent Results</h2>
@@ -1220,8 +1237,8 @@ WS     /api/v1/ws/live</code></pre>
     function renderQueue() {
       const queue = appState.queue;
       $('#nextUp').textContent = (queue[0]?.runner_name || 'NONE').toUpperCase();
-      $('#queueList').innerHTML = queue.slice(0, 5).map((item, i) => (
-        `<div class="queue-row"><span class="queue-num">${i + 1}</span><strong>${escapeHtml(item.runner_name)}<br><small>${escapeHtml(item.course?.name || '-')}</small></strong><span class="queue-actions"><button class="queue-action" data-queue-action="arm" data-entry-id="${item.id}">Arm</button><button class="queue-action" data-queue-action="skip" data-entry-id="${item.id}" data-version="${item.version}">Skip</button><button class="queue-action" data-queue-action="cancel" data-entry-id="${item.id}">Remove</button></span></div>`
+      $('#queueList').innerHTML = queue.map((item, i) => (
+        `<div class="queue-row" draggable="true" data-entry-id="${item.id}" data-version="${item.version}"><span class="queue-num">${i + 1}</span><strong>${escapeHtml(item.runner_name)}<br><small>${escapeHtml(item.course?.name || '-')}</small></strong><span class="queue-actions"><button class="queue-action" data-queue-action="arm" data-entry-id="${item.id}">Arm</button><button class="queue-action" data-queue-action="skip" data-entry-id="${item.id}" data-version="${item.version}">Skip</button><button class="queue-action" data-queue-action="cancel" data-entry-id="${item.id}">Remove</button></span></div>`
       )).join('');
       $('#kioskQueue').innerHTML = queue.slice(0, 2).map((item, i) => (
         `<div class="rank-row"><span class="rank">${i + 1}</span><span>${escapeHtml(item.runner_name)}</span><span>${escapeHtml(item.age_group || '-')} YEARS</span></div>`
@@ -1257,6 +1274,7 @@ WS     /api/v1/ws/live</code></pre>
       $('#revisionStartInput').value = revision?.revision_start_date || '';
       $('#leaderboardEligibleInput').value = String(revision?.leaderboard_eligible ?? true);
       $('#layoutNotesInput').value = revision?.layout_notes || '';
+      setDesignerSettings(course);
 
       if (!course) {
         $('#adminCourseSummary').textContent = 'No courses loaded.';
@@ -1362,10 +1380,35 @@ WS     /api/v1/ws/live</code></pre>
     }
 
     function coursePayload() {
+      const modeBtn = $('#designerModeCard .choice.selected');
+      const default_mode = modeBtn ? modeBtn.dataset.mode : 'OPEN_GYM';
+
+      const countdownBtn = $('#designerCountdownCard .choice.selected');
+      const countdown_seconds = countdownBtn ? Number(countdownBtn.dataset.countdown) : 3;
+
+      const falseStartBtn = $('#designerFalseStartCard .choice[data-false-start].selected');
+      const false_start_enabled = falseStartBtn ? (falseStartBtn.dataset.falseStart === 'true') : true;
+
+      const activeBars = $$('#designerSensitivityBars span.on').length;
+      const false_start_sensitivity = activeBars || 5;
+
+      const relay_start_lights = $('#designerRelayCard .choice[data-relay="relay_start_lights"]').classList.contains('selected');
+      const relay_finish_chime = $('#designerRelayCard .choice[data-relay="relay_finish_chime"]').classList.contains('selected');
+      const relay_smoke_burst = $('#designerRelayCard .choice[data-relay="relay_smoke_burst"]').classList.contains('selected');
+      const relay_crowd_cheer = $('#designerRelayCard .choice[data-relay="relay_crowd_cheer"]').classList.contains('selected');
+
       return {
         name: fieldValue('#courseNameInput'),
         slug: nullableField('#courseSlugInput'),
-        description: nullableField('#courseDescriptionInput')
+        description: nullableField('#courseDescriptionInput'),
+        default_mode,
+        countdown_seconds,
+        false_start_enabled,
+        false_start_sensitivity,
+        relay_start_lights,
+        relay_finish_chime,
+        relay_smoke_burst,
+        relay_crowd_cheer
       };
     }
 
@@ -1380,6 +1423,40 @@ WS     /api/v1/ws/live</code></pre>
       };
     }
 
+    function setDesignerSettings(settings = {}) {
+      const defaultMode = settings.default_mode || 'OPEN_GYM';
+      $$('#designerModeCard .choice').forEach(x => {
+        x.classList.toggle('selected', x.dataset.mode === defaultMode);
+      });
+
+      const countdownSec = settings.countdown_seconds ?? 3;
+      $$('#designerCountdownCard .choice').forEach(x => {
+        x.classList.toggle('selected', Number(x.dataset.countdown) === countdownSec);
+      });
+
+      const falseStartEnabled = settings.false_start_enabled ?? true;
+      $$('#designerFalseStartCard .choice[data-false-start]').forEach(x => {
+        const isTrue = x.dataset.falseStart === 'true';
+        x.classList.toggle('selected', isTrue === falseStartEnabled);
+      });
+
+      const falseStartSens = settings.false_start_sensitivity ?? 5;
+      $$('#designerSensitivityBars span').forEach(el => {
+        const val = Number(el.dataset.sens);
+        el.classList.toggle('on', val <= falseStartSens);
+      });
+
+      const startLights = settings.relay_start_lights ?? true;
+      const finishChime = settings.relay_finish_chime ?? true;
+      const smokeBurst = settings.relay_smoke_burst ?? false;
+      const crowdCheer = settings.relay_crowd_cheer ?? true;
+
+      $('#designerRelayCard .choice[data-relay="relay_start_lights"]').classList.toggle('selected', startLights);
+      $('#designerRelayCard .choice[data-relay="relay_finish_chime"]').classList.toggle('selected', finishChime);
+      $('#designerRelayCard .choice[data-relay="relay_smoke_burst"]').classList.toggle('selected', smokeBurst);
+      $('#designerRelayCard .choice[data-relay="relay_crowd_cheer"]').classList.toggle('selected', crowdCheer);
+    }
+
     function clearDesignerForNewCourse() {
       appState.selectedCourseId = null;
       appState.selectedRevisionId = null;
@@ -1392,6 +1469,7 @@ WS     /api/v1/ws/live</code></pre>
       $('#revisionStartInput').value = new Date().toISOString().slice(0, 10);
       $('#leaderboardEligibleInput').value = 'true';
       $('#layoutNotesInput').value = '';
+      setDesignerSettings();
       $('#adminCourseSummary').textContent = 'Design a new course and save it to make it available.';
     }
 
@@ -1476,6 +1554,45 @@ WS     /api/v1/ws/live</code></pre>
       renderCourses();
     });
 
+    // Add Course Designer settings click listeners
+    $('#designerModeCard').addEventListener('click', event => {
+      const choice = event.target.closest('.choice');
+      if (!choice) return;
+      $$('#designerModeCard .choice').forEach(x => x.classList.remove('selected'));
+      choice.classList.add('selected');
+    });
+
+    $('#designerCountdownCard').addEventListener('click', event => {
+      const choice = event.target.closest('.choice');
+      if (!choice) return;
+      $$('#designerCountdownCard .choice').forEach(x => x.classList.remove('selected'));
+      choice.classList.add('selected');
+    });
+
+    $('#designerFalseStartCard').addEventListener('click', event => {
+      const choice = event.target.closest('.choice[data-false-start]');
+      if (choice) {
+        $$('#designerFalseStartCard .choice[data-false-start]').forEach(x => x.classList.remove('selected'));
+        choice.classList.add('selected');
+      }
+    });
+
+    $('#designerSensitivityBars').addEventListener('click', event => {
+      const bar = event.target.closest('span');
+      if (!bar) return;
+      const sens = Number(bar.dataset.sens);
+      $$('#designerSensitivityBars span').forEach(el => {
+        const val = Number(el.dataset.sens);
+        el.classList.toggle('on', val <= sens);
+      });
+    });
+
+    $('#designerRelayCard').addEventListener('click', event => {
+      const choice = event.target.closest('.choice');
+      if (!choice) return;
+      choice.classList.toggle('selected');
+    });
+
     $('#newCourseBtn').addEventListener('click', clearDesignerForNewCourse);
 
     $('#saveCourseBtn').addEventListener('click', async () => {
@@ -1508,20 +1625,6 @@ WS     /api/v1/ws/live</code></pre>
         appState.selectedCourseId = null;
         await refreshCourses();
         showToast('Course disabled');
-      } catch (error) {
-        showToast(error.message);
-      }
-    });
-
-    $('#newRevisionBtn').addEventListener('click', async () => {
-      if (!appState.selectedCourseId) {
-        showToast('Save the course before adding layouts');
-        return;
-      }
-      try {
-        await api.createCourseRevision(appState.selectedCourseId, revisionPayload(true));
-        await refreshCourses();
-        showToast('New layout saved');
       } catch (error) {
         showToast(error.message);
       }
@@ -1625,9 +1728,58 @@ WS     /api/v1/ws/live</code></pre>
       });
     }
 
+    function initQueueDragAndDrop() {
+      const queueList = $('#queueList');
+      if (!queueList) return;
+
+      let dragSourceEl = null;
+
+      queueList.addEventListener('dragstart', event => {
+        const row = event.target.closest('.queue-row');
+        if (!row) return;
+        dragSourceEl = row;
+        row.classList.add('dragging');
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', row.dataset.entryId);
+      });
+
+      queueList.addEventListener('dragover', event => {
+        event.preventDefault();
+        const row = event.target.closest('.queue-row');
+        if (!row || row === dragSourceEl) return;
+
+        const rect = row.getBoundingClientRect();
+        const next = (event.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
+
+        queueList.insertBefore(dragSourceEl, next ? row.nextSibling : row);
+      });
+
+      queueList.addEventListener('dragend', event => {
+        const row = event.target.closest('.queue-row');
+        if (row) {
+          row.classList.remove('dragging');
+        }
+        $$('.queue-row').forEach(el => el.classList.remove('dragging'));
+      });
+
+      queueList.addEventListener('drop', async event => {
+        event.preventDefault();
+        const newOrderIds = $$('#queueList .queue-row').map(el => Number(el.dataset.entryId));
+        try {
+          await api.post('/queue/reorder', { queue_entry_ids: newOrderIds });
+          showToast('Queue reordered');
+          await refreshQueue();
+        } catch (error) {
+          showToast(error.message);
+          await refreshQueue();
+        }
+      });
+    }
+
     tickClock();
     renderAll().catch(error => showToast(error.message));
     connectLiveUpdates();
+    initQueueDragAndDrop();
     setInterval(tickClock, 10_000);
     setInterval(animateTimer, 100);
   </script>

@@ -5,7 +5,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 
 from app.api import routes_auth, routes_courses
-from app.api.auth import AdminAuthError, admin_auth_exception_handler
+from app.api.auth import (
+    AdminAuthError,
+    admin_auth_exception_handler,
+    reset_login_rate_limits_for_tests,
+)
 from app.config import get_settings
 from app.db.database import SessionLocal, get_db, initialize_database, reset_engine_for_tests
 from app.db.models import Course, CourseRevision
@@ -46,6 +50,7 @@ def _admin_headers(client):
 
 
 def test_course_api_lists_creates_and_designs_layout_revisions(tmp_path):
+    reset_login_rate_limits_for_tests()
     reset_engine_for_tests()
     settings = _settings_for(tmp_path / "timer.sqlite")
     initialize_database(settings)
@@ -68,6 +73,11 @@ def test_course_api_lists_creates_and_designs_layout_revisions(tmp_path):
         json={
             "name": "Warp Wall Sprint",
             "description": "Short sprint format",
+            "default_mode": "COMPETITION",
+            "countdown_seconds": 5,
+            "false_start_enabled": False,
+            "false_start_sensitivity": 2,
+            "relay_smoke_burst": True,
             "first_revision_name": "Week 1 speed build",
             "layout_notes": "Start gate, balance beam, wall, finish button",
             "obstacle_count": 4,
@@ -76,16 +86,22 @@ def test_course_api_lists_creates_and_designs_layout_revisions(tmp_path):
     assert created.status_code == 200
     course = created.json()["data"]
     assert course["slug"] == "warp-wall-sprint"
+    assert course["default_mode"] == "COMPETITION"
+    assert course["countdown_seconds"] == 5
+    assert course["false_start_enabled"] is False
+    assert course["false_start_sensitivity"] == 2
+    assert course["relay_smoke_burst"] is True
     assert course["open_revision"]["revision_name"] == "Week 1 speed build"
     assert course["open_revision"]["obstacle_count"] == 4
 
     renamed = client.patch(
         f"/api/v1/courses/{course['id']}",
         headers=headers,
-        json={"name": "Warp Wall Sprint Pro"},
+        json={"name": "Warp Wall Sprint Pro", "countdown_seconds": 10},
     )
     assert renamed.status_code == 200
     assert renamed.json()["data"]["name"] == "Warp Wall Sprint Pro"
+    assert renamed.json()["data"]["countdown_seconds"] == 10
 
     next_revision = client.post(
         f"/api/v1/courses/{course['id']}/revisions",
@@ -116,4 +132,23 @@ def test_course_api_lists_creates_and_designs_layout_revisions(tmp_path):
 
     assert stored.name == "Warp Wall Sprint Pro"
     assert revision_count == 2
+    reset_engine_for_tests()
+
+
+def test_admin_login_is_rate_limited_after_failed_attempts(tmp_path):
+    reset_login_rate_limits_for_tests()
+    reset_engine_for_tests()
+    settings = _settings_for(tmp_path / "timer.sqlite")
+    initialize_database(settings)
+    client = _client(settings)
+
+    for _attempt in range(5):
+        response = client.post("/api/v1/auth/login", json={"pin": "0000"})
+        assert response.status_code == 401
+
+    limited = client.post("/api/v1/auth/login", json={"pin": "0000"})
+    assert limited.status_code == 429
+    assert limited.json()["error"]["code"] == "ADMIN_LOGIN_RATE_LIMITED"
+
+    reset_login_rate_limits_for_tests()
     reset_engine_for_tests()

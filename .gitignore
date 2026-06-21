@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Virtual environments and package metadata
+venv/
+.venv/
+*.egg-info/
+build/
+dist/
+
+# Local runtime data
+data/*.sqlite
+data/*.sqlite-shm
+data/*.sqlite-wal
+data/backups/
+data/exports/
+data/logs/
+server.log
+server_error.log
+
+# Local configuration overrides
+.env
+.env.*

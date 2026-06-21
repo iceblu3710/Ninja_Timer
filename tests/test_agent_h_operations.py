@@ -166,6 +166,9 @@ def test_backup_logs_and_system_events_routes(tmp_path, monkeypatch):
     assert logs.status_code == 200
     assert logs.json()["data"]["lines"] == ["second\n"]
 
+    invalid_log = client.get("/api/v1/ops/logs/..%5Csettings.yaml", headers=headers)
+    assert invalid_log.status_code == 400
+
     events = client.get("/api/v1/ops/system-events", headers=headers)
     assert events.status_code == 200
 
@@ -181,9 +184,7 @@ def test_runs_csv_export_uses_v1_columns(tmp_path):
     with SessionLocal() as db:
         course = db.scalar(select(Course).where(Course.slug == "speed-gauntlet"))
         assert course is not None
-        revision = db.scalar(
-            select(CourseRevision).where(CourseRevision.course_id == course.id)
-        )
+        revision = db.scalar(select(CourseRevision).where(CourseRevision.course_id == course.id))
         assert revision is not None
         now = utc_now()
         RunRepository(db).create(

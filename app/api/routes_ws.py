@@ -1,4 +1,5 @@
 """WebSocket routes for live frontend updates."""
+
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.services.event_bus import event_bus
@@ -17,4 +18,6 @@ async def live_updates(websocket: WebSocket) -> None:
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
+        pass
+    finally:
         await event_bus.disconnect(websocket)

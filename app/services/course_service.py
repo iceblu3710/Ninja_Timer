@@ -1,4 +1,5 @@
 """Course persistence services and default course seeding."""
+
 import re
 
 from sqlalchemy.orm import Session
@@ -51,13 +52,27 @@ def create_course(db: Session, payload: CourseCreate) -> Course:
     if repository.get_by_slug(slug) is not None:
         raise ValueError(f"Course slug {slug} already exists.")
 
-    course = repository.create(slug=slug, name=name, description=payload.description)
+    _validate_course_settings(payload.model_dump())
+    course = repository.create(
+        slug=slug,
+        name=name,
+        description=payload.description,
+        default_mode=payload.default_mode,
+        countdown_seconds=payload.countdown_seconds,
+        false_start_enabled=payload.false_start_enabled,
+        false_start_sensitivity=payload.false_start_sensitivity,
+        relay_start_lights=payload.relay_start_lights,
+        relay_finish_chime=payload.relay_finish_chime,
+        relay_smoke_burst=payload.relay_smoke_burst,
+        relay_crowd_cheer=payload.relay_crowd_cheer,
+    )
     repository.create_open_revision(
         course,
         start_date=payload.revision_start_date,
         revision_name=payload.first_revision_name or f"{name} Layout",
         layout_notes=payload.layout_notes,
         obstacle_count=payload.obstacle_count,
+        rules_json=payload.rules_json,
     )
     return course
 
@@ -78,6 +93,7 @@ def update_course(db: Session, course_id: int, payload: CourseUpdate) -> Course 
         existing = repository.get_by_slug(values["slug"])
         if existing is not None and existing.id != course.id:
             raise ValueError(f"Course slug {values['slug']} already exists.")
+    _validate_course_settings(values)
 
     return repository.update_course(course, **values)
 
@@ -161,6 +177,14 @@ def course_response(repository: CourseRepository, course: Course) -> dict:
         "slug": course.slug,
         "name": course.name,
         "description": course.description,
+        "default_mode": course.default_mode,
+        "countdown_seconds": course.countdown_seconds,
+        "false_start_enabled": course.false_start_enabled,
+        "false_start_sensitivity": course.false_start_sensitivity,
+        "relay_start_lights": course.relay_start_lights,
+        "relay_finish_chime": course.relay_finish_chime,
+        "relay_smoke_burst": course.relay_smoke_burst,
+        "relay_crowd_cheer": course.relay_crowd_cheer,
         "active": course.active,
         "created_at": course.created_at,
         "updated_at": course.updated_at,
@@ -195,3 +219,23 @@ def _normalize_slug(value: str) -> str:
     if not slug:
         raise ValueError("Course slug is required.")
     return slug
+
+
+def _validate_course_settings(values: dict) -> None:
+    mode = values.get("default_mode")
+    if mode is not None and mode not in {"OPEN_GYM", "PARTY", "COMPETITION"}:
+        raise ValueError("Default mode must be OPEN_GYM, PARTY, or COMPETITION.")
+
+    countdown_seconds = values.get("countdown_seconds")
+    if countdown_seconds is not None:
+        if isinstance(countdown_seconds, bool) or not isinstance(countdown_seconds, int):
+            raise ValueError("Countdown seconds must be an integer.")
+        if countdown_seconds not in {0, 3, 5, 10}:
+            raise ValueError("Countdown seconds must be 0, 3, 5, or 10.")
+
+    sensitivity = values.get("false_start_sensitivity")
+    if sensitivity is not None:
+        if isinstance(sensitivity, bool) or not isinstance(sensitivity, int):
+            raise ValueError("False start sensitivity must be an integer.")
+        if sensitivity < 1 or sensitivity > 6:
+            raise ValueError("False start sensitivity must be between 1 and 6.")

@@ -86,3 +86,32 @@ def test_queue_request_id_is_idempotent_and_persists_after_restart(tmp_path):
 
     reset_engine_for_tests()
 
+
+def test_queue_uses_course_default_mode_when_mode_is_omitted(tmp_path):
+    reset_engine_for_tests()
+    settings = _settings_for(tmp_path / "timer.sqlite")
+    initialize_database(settings)
+
+    with SessionLocal() as db:
+        course = db.scalar(select(Course).where(Course.slug == "speed-gauntlet"))
+        assert course is not None
+        course.default_mode = "PARTY"
+        entry = add_queue_entry(
+            db,
+            QueueEntryCreate(
+                request_id="course-default-mode",
+                runner_name="Avery",
+                age_group="U12",
+                course_slug="speed-gauntlet",
+            ),
+        )
+        db.commit()
+        entry_id = entry.id
+
+    with SessionLocal() as db:
+        stored = db.get(QueueEntry, entry_id)
+
+    assert stored is not None
+    assert stored.mode == "PARTY"
+
+    reset_engine_for_tests()

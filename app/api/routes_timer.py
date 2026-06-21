@@ -1,8 +1,12 @@
 """Timer API routes."""
+
+import asyncio
+
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from app.api.auth import require_admin
 from app.api.response_models import run_response
 from app.db.database import get_db
 from app.db.repositories import RunRepository
@@ -60,6 +64,18 @@ async def _publish_run_events(db: Session, run_id: int | None) -> None:
         await event_bus.publish("leaderboard.updated", {"run_id": run.id})
 
 
+async def _complete_countdown_later(
+    service: TimerService,
+    *,
+    token: int,
+    delay_ms: int,
+    source: str,
+) -> None:
+    await asyncio.sleep(delay_ms / 1000)
+    state = service.complete_countdown(token=token, source=source)
+    await _publish_timer_state(state)
+
+
 @router.get("/state")
 async def get_timer_state(
     service: TimerService = Depends(get_timer_service),
@@ -69,9 +85,10 @@ async def get_timer_state(
 
 @router.post("/arm")
 async def arm_timer(
-    payload: TimerArmRequest,
+    payload: TimerArmRequest = TimerArmRequest(),
     db: Session = Depends(get_db),
     service: TimerService = Depends(get_timer_service),
+    _actor: str = Depends(require_admin),
 ) -> dict:
     try:
         state = service.arm(db, payload)
@@ -86,12 +103,26 @@ async def arm_timer(
 
 @router.post("/start")
 async def start_timer(
-    payload: TimerSourceRequest,
+    payload: TimerSourceRequest = TimerSourceRequest(),
     service: TimerService = Depends(get_timer_service),
+    _actor: str = Depends(require_admin),
 ) -> dict:
     try:
         state = service.start(source=payload.source)
         await _publish_timer_state(state)
+        if (
+            state.state == "COUNTDOWN"
+            and state.countdown_token is not None
+            and state.countdown_remaining_ms is not None
+        ):
+            asyncio.create_task(
+                _complete_countdown_later(
+                    service,
+                    token=state.countdown_token,
+                    delay_ms=state.countdown_remaining_ms,
+                    source=payload.source,
+                )
+            )
         return _ok(state)
     except TimerServiceError as exc:
         return _timer_error(exc)
@@ -99,9 +130,10 @@ async def start_timer(
 
 @router.post("/finish")
 async def finish_timer(
-    payload: TimerSourceRequest,
+    payload: TimerSourceRequest = TimerSourceRequest(),
     db: Session = Depends(get_db),
     service: TimerService = Depends(get_timer_service),
+    _actor: str = Depends(require_admin),
 ) -> dict:
     try:
         state = service.finish(db, source=payload.source)
@@ -117,9 +149,10 @@ async def finish_timer(
 
 @router.post("/stop")
 async def stop_timer(
-    payload: TimerStopRequest,
+    payload: TimerStopRequest = TimerStopRequest(),
     db: Session = Depends(get_db),
     service: TimerService = Depends(get_timer_service),
+    _actor: str = Depends(require_admin),
 ) -> dict:
     try:
         state = service.stop(db, status=payload.status, source=payload.source, notes=payload.notes)
@@ -135,22 +168,48 @@ async def stop_timer(
 
 @router.post("/reset")
 async def reset_timer(
-    payload: TimerResetRequest,
+    payload: TimerResetRequest = TimerResetRequest(),
+    db: Session = Depends(get_db),
     service: TimerService = Depends(get_timer_service),
+    _actor: str = Depends(require_admin),
 ) -> dict:
     try:
-        state = service.reset(clear_active_runner=payload.clear_active_runner)
+        state = service.reset(db, clear_active_runner=payload.clear_active_runner)
+        db.commit()
         await _publish_timer_state(state)
+        await event_bus.publish("queue.updated", {"source": "timer.reset"})
         return _ok(state)
     except TimerServiceError as exc:
+        db.rollback()
+        return _timer_error(exc)
+
+
+@router.post("/accept")
+async def accept_timer(
+    payload: TimerSourceRequest = TimerSourceRequest(),
+    db: Session = Depends(get_db),
+    service: TimerService = Depends(get_timer_service),
+    _actor: str = Depends(require_admin),
+) -> dict:
+    try:
+        state, run_id = service.accept(db, source=payload.source)
+        db.commit()
+        await _publish_timer_state(state)
+        await event_bus.publish("queue.updated", {"source": "timer.accept"})
+        if run_id is not None:
+            await _publish_run_events(db, run_id)
+        return _ok(state)
+    except TimerServiceError as exc:
+        db.rollback()
         return _timer_error(exc)
 
 
 @router.post("/dnf")
 async def dnf_timer(
-    payload: TimerDnfRequest,
+    payload: TimerDnfRequest = TimerDnfRequest(),
     db: Session = Depends(get_db),
     service: TimerService = Depends(get_timer_service),
+    _actor: str = Depends(require_admin),
 ) -> dict:
     try:
         state = service.dnf(db, notes=payload.notes, source=payload.source)
@@ -166,9 +225,10 @@ async def dnf_timer(
 
 @router.post("/delete-last-run")
 async def delete_last_run(
-    payload: TimerDeleteLastRunRequest,
+    payload: TimerDeleteLastRunRequest = TimerDeleteLastRunRequest(),
     db: Session = Depends(get_db),
     service: TimerService = Depends(get_timer_service),
+    _actor: str = Depends(require_admin),
 ) -> dict:
     try:
         run = RunRepository(db).most_recent()
@@ -179,6 +239,25 @@ async def delete_last_run(
             data = run_response(run)
             await event_bus.publish("run.saved", {"run": data})
             await event_bus.publish("leaderboard.updated", {"run_id": run.id, "deleted": True})
+        return _ok(state)
+    except TimerServiceError as exc:
+        db.rollback()
+        return _timer_error(exc)
+
+
+@router.post("/obstacles/{index}/toggle")
+async def toggle_timer_obstacle(
+    index: int,
+    db: Session = Depends(get_db),
+    service: TimerService = Depends(get_timer_service),
+    _actor: str = Depends(require_admin),
+) -> dict:
+    try:
+        state = service.toggle_obstacle(db, index)
+        db.commit()
+        await _publish_timer_state(state)
+        if state.run_id is not None:
+            await _publish_run_events(db, state.run_id)
         return _ok(state)
     except TimerServiceError as exc:
         db.rollback()

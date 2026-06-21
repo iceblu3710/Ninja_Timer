@@ -1,12 +1,19 @@
 """Queue API routes."""
+
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from app.api.auth import require_admin
 from app.api.response_models import queue_entry_response
 from app.db.database import get_db
-from app.db.repositories import AuditRepository
-from app.db.schemas import QueueEntryCreate, QueueEntryUpdate, QueueRecoverRequest
+from app.db.repositories import AuditRepository, QueueRepository
+from app.db.schemas import (
+    QueueEntryCreate,
+    QueueEntryUpdate,
+    QueueRecoverRequest,
+    QueueReorderRequest,
+)
 from app.services.event_bus import event_bus
 from app.services.queue_service import (
     active_queue,
@@ -62,6 +69,7 @@ async def patch_queue_entry(
     queue_entry_id: int,
     payload: QueueEntryUpdate,
     db: Session = Depends(get_db),
+    actor: str = Depends(require_admin),
 ):
     try:
         entry = update_queue_entry(db, queue_entry_id, payload)
@@ -78,7 +86,7 @@ async def patch_queue_entry(
         )
 
     AuditRepository(db).record(
-        actor="ADMIN",
+        actor=actor,
         action="UPDATE_QUEUE_ENTRY",
         target_type="queue_entry",
         target_id=entry.id,
@@ -94,6 +102,7 @@ async def patch_queue_entry(
 async def recover_queue_entries(
     payload: QueueRecoverRequest,
     db: Session = Depends(get_db),
+    actor: str = Depends(require_admin),
 ):
     try:
         entries = recover_queue(db, payload.policy)
@@ -102,7 +111,7 @@ async def recover_queue_entries(
         return _error(status.HTTP_409_CONFLICT, "INVALID_POLICY", str(exc))
 
     AuditRepository(db).record(
-        actor="ADMIN",
+        actor=actor,
         action="RECOVER_QUEUE",
         target_type="queue",
     )
@@ -116,6 +125,7 @@ async def recover_queue_entries(
 async def delete_queue_entry(
     queue_entry_id: int,
     db: Session = Depends(get_db),
+    actor: str = Depends(require_admin),
 ):
     entry = cancel_queue_entry(db, queue_entry_id)
     if entry is None:
@@ -126,7 +136,7 @@ async def delete_queue_entry(
             f"Queue entry {queue_entry_id} was not found.",
         )
     AuditRepository(db).record(
-        actor="ADMIN",
+        actor=actor,
         action="CANCEL_QUEUE_ENTRY",
         target_type="queue_entry",
         target_id=entry.id,
@@ -134,4 +144,23 @@ async def delete_queue_entry(
     db.commit()
     data = queue_entry_response(db, entry)
     await event_bus.publish("queue.updated", {"entry": data})
+    return _ok(data)
+
+
+@router.post("/reorder")
+async def reorder_queue(
+    payload: QueueReorderRequest,
+    db: Session = Depends(get_db),
+    actor: str = Depends(require_admin),
+):
+    repository = QueueRepository(db)
+    updated = repository.reorder_queue(payload.queue_entry_ids)
+    AuditRepository(db).record(
+        actor=actor,
+        action="REORDER_QUEUE",
+        target_type="queue",
+    )
+    db.commit()
+    data = [queue_entry_response(db, entry) for entry in updated]
+    await event_bus.publish("queue.updated", {"entries": data})
     return _ok(data)

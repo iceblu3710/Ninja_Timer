@@ -1,4 +1,5 @@
 """SQLAlchemy ORM models matching the MVP persistence schema."""
+
 from sqlalchemy import Boolean, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -28,6 +29,14 @@ class Course(TimestampMixin, Base):
     slug: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
+    default_mode: Mapped[str] = mapped_column(String, nullable=False, default="OPEN_GYM")
+    countdown_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
+    false_start_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    false_start_sensitivity: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
+    relay_start_lights: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    relay_finish_chime: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    relay_smoke_burst: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    relay_crowd_cheer: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     revisions: Mapped[list["CourseRevision"]] = relationship(back_populates="course")
@@ -122,6 +131,7 @@ class Run(TimestampMixin, Base):
     false_start_ms: Mapped[int | None] = mapped_column(Integer)
     reaction_ms: Mapped[int | None] = mapped_column(Integer)
     notes: Mapped[str | None] = mapped_column(Text)
+    obstacle_status_json: Mapped[str | None] = mapped_column(Text)
     deleted_at: Mapped[str | None] = mapped_column(String)
     deleted_reason: Mapped[str | None] = mapped_column(Text)
 

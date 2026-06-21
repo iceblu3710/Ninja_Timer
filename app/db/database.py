@@ -62,6 +62,7 @@ def initialize_database(settings: Settings | None = None) -> None:
     from app.db import models  # noqa: F401
     from app.services.course_service import seed_default_courses
     from app.services.queue_service import seed_active_session
+    from app.services.settings_service import seed_default_settings
 
     engine = get_engine(settings)
     Base.metadata.create_all(bind=engine)
@@ -69,6 +70,7 @@ def initialize_database(settings: Settings | None = None) -> None:
     with SessionLocal() as db:
         seed_default_courses(db)
         seed_active_session(db)
+        seed_default_settings(db)
         db.commit()
 
 
@@ -119,4 +121,3 @@ def _attach_sqlite_pragmas(engine: Engine) -> None:
         cursor.execute("PRAGMA synchronous = NORMAL")
         cursor.execute("PRAGMA busy_timeout = 5000")
         cursor.close()
-

@@ -13,6 +13,7 @@ from app.db.models import (
     Run,
     SessionModel,
     Setting,
+    SystemEvent,
 )
 
 
@@ -376,6 +377,9 @@ class SettingsRepository:
     def get(self, key: str) -> Setting | None:
         return self.db.get(Setting, key)
 
+    def list_all(self) -> list[Setting]:
+        return list(self.db.scalars(select(Setting).order_by(Setting.key)))
+
     def upsert_default(
         self,
         key: str,
@@ -404,6 +408,110 @@ class SettingsRepository:
         self.db.add(setting)
         self.db.flush()
         return setting
+
+    def update_value(
+        self,
+        setting: Setting,
+        *,
+        value_json: str,
+        value_type: str | None,
+        updated_by: str,
+    ) -> Setting:
+        setting.last_good_value_json = setting.value_json
+        setting.value_json = value_json
+        setting.value_type = value_type
+        setting.pending_value_json = None
+        setting.validation_status = "VALID"
+        setting.validation_error = None
+        setting.version += 1
+        setting.updated_at = utc_now()
+        setting.updated_by = updated_by
+        self.db.flush()
+        return setting
+
+    def store_invalid_pending(
+        self,
+        setting: Setting,
+        *,
+        pending_value_json: str,
+        validation_error: str,
+        updated_by: str,
+    ) -> Setting:
+        setting.pending_value_json = pending_value_json
+        setting.validation_status = "INVALID"
+        setting.validation_error = validation_error
+        setting.updated_at = utc_now()
+        setting.updated_by = updated_by
+        self.db.flush()
+        return setting
+
+    def rollback(self, setting: Setting, *, updated_by: str) -> Setting:
+        fallback = setting.last_good_value_json or setting.default_value_json
+        if fallback is None:
+            raise ValueError(f"Setting {setting.key} has no rollback value.")
+        setting.value_json = fallback
+        setting.pending_value_json = None
+        setting.validation_status = "VALID"
+        setting.validation_error = None
+        setting.version += 1
+        setting.updated_at = utc_now()
+        setting.updated_by = updated_by
+        self.db.flush()
+        return setting
+
+
+class SystemEventRepository:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def record(
+        self,
+        *,
+        level: str,
+        category: str,
+        message: str,
+        source: str | None = None,
+        payload_json: str | None = None,
+        request_id: str | None = None,
+        retention_class: str = "NORMAL",
+    ) -> SystemEvent:
+        severity_rank = {"DEBUG": 10, "INFO": 20, "WARNING": 30, "ERROR": 40}.get(
+            level.upper(),
+            20,
+        )
+        event = SystemEvent(
+            event_id=None,
+            level=level.upper(),
+            severity_rank=severity_rank,
+            category=category.upper(),
+            source=source,
+            message=message,
+            payload_json=payload_json,
+            request_id=request_id,
+            retention_class=retention_class,
+            acknowledged_at=None,
+            created_at=utc_now(),
+        )
+        self.db.add(event)
+        self.db.flush()
+        return event
+
+    def recent(
+        self,
+        *,
+        limit: int = 100,
+        category: str | None = None,
+        level: str | None = None,
+    ) -> list[SystemEvent]:
+        statement = select(SystemEvent)
+        if category is not None:
+            statement = statement.where(SystemEvent.category == category.upper())
+        if level is not None:
+            statement = statement.where(SystemEvent.level == level.upper())
+        statement = statement.order_by(SystemEvent.created_at.desc(), SystemEvent.id.desc()).limit(
+            limit
+        )
+        return list(self.db.scalars(statement))
 
 
 class AuditRepository:

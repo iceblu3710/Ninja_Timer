@@ -846,7 +846,7 @@
     <section id="api" class="view" aria-label="API contract notes">
       <article class="panel" style="padding:26px;">
         <h2 class="section-title">Python Backend API Shape</h2>
-        <p style="color:var(--muted);font-weight:900;">This single-page prototype uses <code>ApiClient</code> below. Right now it is backed by mock data, but the method names and payloads are structured so you can swap to <code>fetch()</code>, WebSocket events, or SSE from FastAPI later.</p>
+        <p style="color:var(--muted);font-weight:900;">This single-page UI uses the local FastAPI backend for commands, persisted queue data, saved runs, leaderboards, and WebSocket updates.</p>
         <pre style="white-space:pre-wrap;line-height:1.45;padding:18px;border:1px solid var(--line);background:#060409;border-radius:12px;color:#ddd;overflow:auto;"><code>GET    /api/v1/status
 GET    /api/v1/timer/state
 POST   /api/v1/timer/arm
@@ -882,84 +882,29 @@ WS     /api/v1/ws/live</code></pre>
   <div class="toast" id="toast">Action queued.</div>
 
   <script>
-    const mockDb = {
-      timer: {
-        state: 'RUNNING',
-        runner: { id: 1, name: 'JAXSON', age_group: '9-11' },
-        course: { id: 'speed-gauntlet', name: 'Speed Gauntlet' },
-        mode: 'TIMED CHALLENGE',
-        elapsed_ms: 18420,
-        started_at: new Date(Date.now() - 18420).toISOString(),
-        hardware: { arduino_connected: true, start_input: 'CLEAR', finish_button: 'READY' }
-      },
-      queue: [
-        { id: 2, name: 'ELLIOT', age_group: '9-11', course: 'Speed Gauntlet' },
-        { id: 3, name: 'MIA', age_group: '9-11', course: 'Speed Gauntlet' },
-        { id: 4, name: 'LEVI', age_group: '9-11', course: 'Speed Gauntlet' },
-        { id: 5, name: 'HARPER', age_group: '9-11', course: 'Speed Gauntlet' },
-        { id: 6, name: 'NATHAN', age_group: '9-11', course: 'Speed Gauntlet' }
-      ],
-      runs: [
-        { id: 101, time: '12:45:18 PM', runner: 'JAXSON', age_group: '9-11', course: 'Speed Gauntlet', mode: 'Open Gym', elapsed_ms: 18420, delta_ms: 0 },
-        { id: 102, time: '12:44:51 PM', runner: 'ELLIOT', age_group: '9-11', course: 'Speed Gauntlet', mode: 'Open Gym', elapsed_ms: 21330, delta_ms: 2910 },
-        { id: 103, time: '12:44:20 PM', runner: 'MIA', age_group: '9-11', course: 'Speed Gauntlet', mode: 'Open Gym', elapsed_ms: 22870, delta_ms: 4450 },
-        { id: 104, time: '12:43:55 PM', runner: 'LEVI', age_group: '9-11', course: 'Speed Gauntlet', mode: 'Open Gym', elapsed_ms: 24180, delta_ms: 5760 },
-        { id: 105, time: '12:43:28 PM', runner: 'HARPER', age_group: '9-11', course: 'Speed Gauntlet', mode: 'Open Gym', elapsed_ms: 25900, delta_ms: 7480 }
-      ],
-      allTime: [
-        { rank: 1, runner: 'COOPER', elapsed_ms: 16780 },
-        { rank: 2, runner: 'NATHAN', elapsed_ms: 17190 },
-        { rank: 3, runner: 'KAMRYN', elapsed_ms: 17660 }
-      ],
-      personalBests: [
-        { runner: 'ELLIOT', elapsed_ms: 21330, when: 'TODAY' },
-        { runner: 'COOPER', elapsed_ms: 16780, when: 'MAY 17' },
-        { runner: 'NATHAN', elapsed_ms: 17190, when: 'MAY 17' }
-      ]
-    };
-
     class ApiClient {
-      constructor({ baseUrl = '/api/v1', mock = true } = {}) {
+      constructor({ baseUrl = '/api/v1' } = {}) {
         this.baseUrl = baseUrl;
-        this.mock = mock;
       }
 
-      async getStatus() {
-        return this.mock ? { ok: true, message: 'All Systems Go', arduino_connected: true } : this.get('/status');
-      }
-
-      async getTimerState() {
-        return this.mock ? structuredClone(mockDb.timer) : this.get('/timer/state');
-      }
-
+      async getStatus() { return this.get('/status'); }
+      async getTimerState() { return this.get('/timer/state'); }
       async commandTimer(action) {
-        if (this.mock) {
-          const stateMap = { arm: 'READY', start: 'RUNNING', stop: 'FINISHED', reset: 'IDLE', deleteLastRun: 'RUNNING' };
-          mockDb.timer.state = stateMap[action] || mockDb.timer.state;
-          if (action === 'start') mockDb.timer.started_at = new Date().toISOString();
-          if (action === 'reset') mockDb.timer.elapsed_ms = 0;
-          return { ok: true, action, state: mockDb.timer.state };
-        }
-        return this.post(`/timer/${action}`);
+        const path = action === 'deleteLastRun' ? '/timer/delete-last-run' : `/timer/${action}`;
+        const body = action === 'stop' ? { status: 'MANUAL_STOPPED', source: 'ADMIN' } : { source: 'ADMIN' };
+        if (action === 'arm' || action === 'reset' || action === 'deleteLastRun') return this.post(path, {});
+        return this.post(path, body);
       }
-
-      async getQueue() { return this.mock ? structuredClone(mockDb.queue) : this.get('/queue'); }
-      async getRecentRuns(limit = 10) { return this.mock ? structuredClone(mockDb.runs).slice(0, limit) : this.get(`/runs/recent?limit=${limit}`); }
-      async getTodayLeaderboard() { return this.mock ? structuredClone(mockDb.runs).slice(0, 5).sort((a,b) => a.elapsed_ms - b.elapsed_ms) : this.get('/leaderboards/today?course_id=speed-gauntlet'); }
-      async getAllTimeLeaderboard() { return this.mock ? structuredClone(mockDb.allTime) : this.get('/leaderboards/all-time?course_id=speed-gauntlet'); }
-      async joinQueue(payload) {
-        if (this.mock) {
-          const item = { id: Date.now(), ...payload };
-          mockDb.queue.push(item);
-          return { ok: true, item };
-        }
-        return this.post('/queue', payload);
-      }
+      async getQueue() { return this.get('/queue'); }
+      async getRecentRuns(limit = 10) { return this.get(`/runs/recent?limit=${limit}`); }
+      async getTodayLeaderboard() { return this.get('/leaderboards/today?limit=10'); }
+      async getAllTimeLeaderboard() { return this.get('/leaderboards/all-time?limit=10'); }
+      async getPersonalBests() { return this.get('/leaderboards/personal-bests?limit=5'); }
+      async joinQueue(payload) { return this.post('/queue', payload); }
 
       async get(path) {
         const response = await fetch(this.baseUrl + path);
-        if (!response.ok) throw new Error(`GET ${path} failed`);
-        return response.json();
+        return this.unwrap(response, `GET ${path}`);
       }
 
       async post(path, body = {}) {
@@ -968,59 +913,159 @@ WS     /api/v1/ws/live</code></pre>
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
         });
-        if (!response.ok) throw new Error(`POST ${path} failed`);
-        return response.json();
+        return this.unwrap(response, `POST ${path}`);
+      }
+
+      async unwrap(response, label) {
+        const payload = await response.json();
+        if (!response.ok || payload.ok === false) {
+          const message = payload.error?.message || `${label} failed`;
+          throw new Error(message);
+        }
+        return Object.prototype.hasOwnProperty.call(payload, 'data') ? payload.data : payload;
       }
     }
 
-    const api = new ApiClient({ mock: true });
+    const api = new ApiClient();
     const $ = selector => document.querySelector(selector);
     const $$ = selector => [...document.querySelectorAll(selector)];
+    const appState = {
+      timer: null,
+      queue: [],
+      recent: [],
+      today: [],
+      allTime: [],
+      personalBests: [],
+      timerSyncedAt: Date.now(),
+      reconnectTimer: null,
+      ws: null
+    };
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[char]);
+    }
 
     function formatMs(ms) {
+      if (ms === null || ms === undefined) return '00:00.00';
       const minutes = Math.floor(ms / 60000);
       const seconds = Math.floor((ms % 60000) / 1000);
       const hundredths = Math.floor((ms % 1000) / 10);
       return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(hundredths).padStart(2, '0')}`;
     }
 
+    function titleize(value) {
+      return String(value ?? '').replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
+    }
+
+    function rowName(row) {
+      return row.runner_name || row.runner || row.name || 'Unknown';
+    }
+
     function renderRankRows(target, rows, options = {}) {
       $(target).innerHTML = rows.map((row, index) => {
         const rank = row.rank ?? index + 1;
-        const name = row.runner || row.name;
+        const name = escapeHtml(rowName(row));
         const time = formatMs(row.elapsed_ms);
         const delta = row.delta_ms ? `<span class="delta">+${(row.delta_ms / 1000).toFixed(2)}</span>` : `<span class="delta best">-</span>`;
         return `<div class="rank-row"><span class="rank">${rank}</span><span>${name}</span><span class="rank-time ${rank === 1 || options.gold ? 'gold' : ''}">${time}</span>${options.hideDelta ? '' : delta}</div>`;
       }).join('');
     }
 
-    async function renderAll() {
-      const [timer, queue, recent, today, allTime] = await Promise.all([
-        api.getTimerState(), api.getQueue(), api.getRecentRuns(), api.getTodayLeaderboard(), api.getAllTimeLeaderboard()
-      ]);
+    function renderTimer() {
+      const timer = appState.timer || {};
+      const runner = timer.runner || {};
+      const course = timer.course || {};
+      const mode = timer.mode || 'OPEN_GYM';
+      const runnerName = runner.name || 'No Runner Armed';
+      const age = runner.age_group || '-';
+      const courseName = course.name || 'No Course';
 
-      $('#displayRunner').textContent = timer.runner.name;
+      $('#displayRunner').textContent = runnerName.toUpperCase();
       $('#displayTimer').textContent = formatMs(timer.elapsed_ms);
-      $('#displayState').textContent = timer.state;
-      $('#displayCourse').innerHTML = timer.course.name.replace(' ', '<br>');
-      $('#displayAge').innerHTML = `${timer.runner.age_group}<br>Years`;
-      $('#displayMode').innerHTML = timer.mode.replace(' ', '<br>');
-      $('#previewRunner').textContent = timer.runner.name;
+      $('#displayState').textContent = titleize(timer.state || 'IDLE');
+      $('#displayCourse').innerHTML = escapeHtml(courseName).replace(' ', '<br>');
+      $('#displayAge').innerHTML = `${escapeHtml(age)}<br>Years`;
+      $('#displayMode').innerHTML = escapeHtml(titleize(mode)).replace(' ', '<br>');
+      $('#previewRunner').textContent = runnerName.toUpperCase();
       $('#previewTime').textContent = formatMs(timer.elapsed_ms);
-      $('#nextUp').textContent = queue[0]?.name || 'NONE';
+    }
 
-      renderRankRows('#todayBest', today.slice(0, 3));
-      renderRankRows('#allTimeBest', allTime.slice(0, 3), { hideDelta: true, gold: true });
-      renderRankRows('#lastRuns', recent.slice(0, 5));
-      renderRankRows('#kioskLeader', today.slice(0, 5));
+    function renderQueue() {
+      const queue = appState.queue;
+      $('#nextUp').textContent = (queue[0]?.runner_name || 'NONE').toUpperCase();
+      $('#queueList').innerHTML = queue.slice(0, 5).map((item, i) => (
+        `<div class="queue-row"><span class="queue-num">${i + 1}</span><strong>${escapeHtml(item.runner_name)}</strong><span>${escapeHtml(item.age_group || '-')} YEARS</span></div>`
+      )).join('');
+      $('#kioskQueue').innerHTML = queue.slice(0, 2).map((item, i) => (
+        `<div class="rank-row"><span class="rank">${i + 1}</span><span>${escapeHtml(item.runner_name)}</span><span>${escapeHtml(item.age_group || '-')} YEARS</span></div>`
+      )).join('');
+    }
 
-      $('#recentTable').innerHTML = recent.map(run => `<tr><td>${run.time}</td><td>${run.runner}</td><td>${run.age_group}</td><td>${run.course}</td><td>${run.mode}</td><td style="color:var(--gold)">${formatMs(run.elapsed_ms)}</td></tr>`).join('');
+    function renderRunsAndLeaderboards() {
+      renderRankRows('#todayBest', appState.today.slice(0, 3));
+      renderRankRows('#allTimeBest', appState.allTime.slice(0, 3), { hideDelta: true, gold: true });
+      renderRankRows('#lastRuns', appState.recent.slice(0, 5));
+      renderRankRows('#kioskLeader', appState.today.slice(0, 5));
 
-      const queueMarkup = queue.slice(0, 5).map((item, i) => `<div class="queue-row"><span class="queue-num">${i + 1}</span><strong>${item.name}</strong><span>${item.age_group} YEARS</span></div>`).join('');
-      $('#queueList').innerHTML = queueMarkup;
-      $('#kioskQueue').innerHTML = queue.slice(0, 2).map((item, i) => `<div class="rank-row"><span class="rank">${i + 3}</span><span>${item.name}</span><span>${item.age_group} YEARS</span></div>`).join('');
+      $('#recentTable').innerHTML = appState.recent.map(run => {
+        const time = run.finished_at ? new Date(run.finished_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '-';
+        return `<tr><td>${escapeHtml(time)}</td><td>${escapeHtml(run.runner_name)}</td><td>${escapeHtml(run.age_group || '-')}</td><td>${escapeHtml(run.course_name || '-')}</td><td>${escapeHtml(titleize(run.mode))}</td><td style="color:var(--gold)">${formatMs(run.elapsed_ms)}</td></tr>`;
+      }).join('');
 
-      $('#personalBests').innerHTML = mockDb.personalBests.map(pb => `<div class="rank-row"><span class="delta best">NEW PB!</span><span>${pb.runner}</span><span class="rank-time">${formatMs(pb.elapsed_ms)}</span><span>${pb.when}</span></div>`).join('');
+      $('#personalBests').innerHTML = appState.personalBests.map(pb => (
+        `<div class="rank-row"><span class="delta best">PB</span><span>${escapeHtml(rowName(pb))}</span><span class="rank-time">${formatMs(pb.elapsed_ms)}</span><span>${escapeHtml(pb.finished_at ? new Date(pb.finished_at).toLocaleDateString() : 'ALL TIME')}</span></div>`
+      )).join('');
+    }
+
+    function renderAllFromState() {
+      renderTimer();
+      renderQueue();
+      renderRunsAndLeaderboards();
+    }
+
+    async function renderAll() {
+      const [status, timer, queue, recent, today, allTime, personalBests] = await Promise.all([
+        api.getStatus(),
+        api.getTimerState(),
+        api.getQueue(),
+        api.getRecentRuns(),
+        api.getTodayLeaderboard(),
+        api.getAllTimeLeaderboard(),
+        api.getPersonalBests()
+      ]);
+      appState.timer = timer;
+      appState.queue = queue;
+      appState.recent = recent;
+      appState.today = today;
+      appState.allTime = allTime;
+      appState.personalBests = personalBests;
+      appState.timerSyncedAt = Date.now();
+      $('#systemStatus').textContent = status.app?.status ? titleize(status.app.status) : 'Running';
+      renderAllFromState();
+    }
+
+    async function refreshQueue() {
+      appState.queue = await api.getQueue();
+      renderQueue();
+    }
+
+    async function refreshRuns() {
+      appState.recent = await api.getRecentRuns();
+      renderRunsAndLeaderboards();
+    }
+
+    async function refreshLeaderboards() {
+      const [today, allTime, personalBests] = await Promise.all([
+        api.getTodayLeaderboard(),
+        api.getAllTimeLeaderboard(),
+        api.getPersonalBests()
+      ]);
+      appState.today = today;
+      appState.allTime = allTime;
+      appState.personalBests = personalBests;
+      renderRunsAndLeaderboards();
     }
 
     function showToast(message) {
@@ -1054,9 +1099,15 @@ WS     /api/v1/ws/live</code></pre>
     $$('.big-control').forEach(button => {
       button.addEventListener('click', async () => {
         const action = button.dataset.action;
-        const result = await api.commandTimer(action);
-        showToast(`POST /api/v1/timer/${action} -> ${result.state}`);
-        renderAll();
+        try {
+          const result = await api.commandTimer(action);
+          appState.timer = result;
+          appState.timerSyncedAt = Date.now();
+          renderTimer();
+          showToast(`Timer ${titleize(action)} -> ${titleize(result.state)}`);
+        } catch (error) {
+          showToast(error.message);
+        }
       });
     });
 
@@ -1079,10 +1130,20 @@ WS     /api/v1/ws/live</code></pre>
       const raw = $('#fakeName').textContent.replace('EDIT', '').trim();
       const name = raw.startsWith('Tap') ? 'RILEY' : raw;
       const age = $('.age-btn.selected').childNodes[0].textContent.trim();
-      const course = $('.course-btn.selected').textContent.includes('Speed') ? 'Speed Gauntlet' : 'Ninja Challenge';
-      await api.joinQueue({ name, age_group: age, course });
-      showToast(`POST /api/v1/queue -> ${name} added`);
-      renderAll();
+      const speedSelected = $('.course-btn.selected').textContent.includes('Speed');
+      const course_slug = speedSelected ? 'speed-gauntlet' : 'ninja-challenge';
+      try {
+        await api.joinQueue({
+          request_id: `kiosk-${Date.now()}`,
+          name,
+          age_group: age,
+          course_slug
+        });
+        showToast(`${name.toUpperCase()} joined the queue`);
+        await refreshQueue();
+      } catch (error) {
+        showToast(error.message);
+      }
     });
 
     function tickClock() {
@@ -1091,15 +1152,59 @@ WS     /api/v1/ws/live</code></pre>
     }
 
     function animateTimer() {
-      if (mockDb.timer.state === 'RUNNING') {
-        mockDb.timer.elapsed_ms += 100;
-        $('#displayTimer').textContent = formatMs(mockDb.timer.elapsed_ms);
-        $('#previewTime').textContent = formatMs(mockDb.timer.elapsed_ms);
+      const timer = appState.timer;
+      if (timer?.state === 'RUNNING') {
+        const baseline = Number(timer.elapsed_ms || 0);
+        let elapsed = baseline + (Date.now() - appState.timerSyncedAt);
+        if (timer.started_at) {
+          const startedAt = Date.parse(timer.started_at);
+          if (!Number.isNaN(startedAt)) elapsed = Date.now() - startedAt;
+        }
+        $('#displayTimer').textContent = formatMs(Math.max(0, elapsed));
+        $('#previewTime').textContent = formatMs(Math.max(0, elapsed));
       }
     }
 
+    function connectLiveUpdates() {
+      const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const ws = new WebSocket(`${protocol}//${location.host}/api/v1/ws/live`);
+      appState.ws = ws;
+
+      ws.addEventListener('open', () => {
+        $('#systemStatus').textContent = 'Live Connected';
+      });
+
+      ws.addEventListener('message', async event => {
+        const message = JSON.parse(event.data);
+        if (message.type === 'timer.state') {
+          appState.timer = message.data;
+          appState.timerSyncedAt = Date.now();
+          renderTimer();
+        } else if (message.type === 'queue.updated') {
+          await refreshQueue();
+        } else if (message.type === 'run.saved') {
+          await refreshRuns();
+        } else if (message.type === 'leaderboard.updated') {
+          await refreshLeaderboards();
+        } else if (message.type === 'system.toast' && message.data?.message) {
+          showToast(message.data.message);
+        }
+      });
+
+      ws.addEventListener('close', () => {
+        $('#systemStatus').textContent = 'Reconnecting';
+        clearTimeout(appState.reconnectTimer);
+        appState.reconnectTimer = setTimeout(connectLiveUpdates, 1500);
+      });
+
+      ws.addEventListener('error', () => {
+        ws.close();
+      });
+    }
+
     tickClock();
-    renderAll();
+    renderAll().catch(error => showToast(error.message));
+    connectLiveUpdates();
     setInterval(tickClock, 10_000);
     setInterval(animateTimer, 100);
   </script>

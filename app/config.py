@@ -41,6 +41,9 @@ class Settings:
         self.hardware_driver = "simulated"
         self.countdown_seconds = 3
         self.default_mode = "open_gym"
+        self.admin_pin = os.getenv("ADMIN_PIN", "1234")
+        self.admin_session_seconds = int(os.getenv("ADMIN_SESSION_SECONDS", "43200"))
+        self.backup_retention_days = int(os.getenv("BACKUP_RETENTION_DAYS", "30"))
 
         try:
             if self.config_path.exists():
@@ -70,6 +73,17 @@ class Settings:
         self.countdown_seconds = hw_config.get("countdown_seconds", self.countdown_seconds)
         self.default_mode = hw_config.get("default_mode", self.default_mode)
 
+        security_config = config.get("security", {})
+        self.admin_pin = str(security_config.get("admin_pin", self.admin_pin))
+        self.admin_session_seconds = int(
+            security_config.get("admin_session_seconds", self.admin_session_seconds)
+        )
+
+        ops_config = config.get("operations", {})
+        self.backup_retention_days = int(
+            ops_config.get("backup_retention_days", self.backup_retention_days)
+        )
+
     def to_dict(self) -> dict:
         """Convert settings to dictionary for API responses"""
         return {
@@ -79,6 +93,8 @@ class Settings:
             "hardware_driver": self.hardware_driver,
             "countdown_seconds": self.countdown_seconds,
             "default_mode": self.default_mode,
+            "admin_session_seconds": self.admin_session_seconds,
+            "backup_retention_days": self.backup_retention_days,
         }
 
 

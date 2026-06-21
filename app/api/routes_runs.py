@@ -7,10 +7,12 @@ from fastapi.responses import JSONResponse, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.api.response_models import run_response
 from app.db.database import get_db
 from app.db.models import Run
 from app.db.repositories import AuditRepository, RunRepository
 from app.db.schemas import RunDeleteRequest, RunUpdate
+from app.services.event_bus import event_bus
 from app.services.run_service import recent_runs, soft_delete_run
 
 router = APIRouter(prefix="/api/v1/runs", tags=["runs"])
@@ -25,32 +27,6 @@ def _error(http_status: int, code: str, message: str) -> JSONResponse:
         status_code=http_status,
         content={"ok": False, "error": {"code": code, "message": message}},
     )
-
-
-def _run_response(run: Run) -> dict:
-    return {
-        "id": run.id,
-        "session_id": run.session_id,
-        "athlete_id": run.athlete_id,
-        "queue_entry_id": run.queue_entry_id,
-        "course_id": run.course_id,
-        "course_revision_id": run.course_revision_id,
-        "runner_name": run.runner_name_snapshot,
-        "age_group": run.age_group_snapshot,
-        "course_name": run.course_name_snapshot,
-        "course_revision": run.course_revision_snapshot,
-        "mode": run.mode,
-        "status": run.status,
-        "started_at": run.started_at,
-        "finished_at": run.finished_at,
-        "elapsed_ms": run.elapsed_ms,
-        "source": run.source,
-        "notes": run.notes,
-        "created_at": run.created_at,
-        "updated_at": run.updated_at,
-        "deleted_at": run.deleted_at,
-        "deleted_reason": run.deleted_reason,
-    }
 
 
 @router.get("/recent")
@@ -72,7 +48,7 @@ async def get_recent_runs(
         mode=mode,
         status=status_filter,
     )
-    return _ok([_run_response(run) for run in runs])
+    return _ok([run_response(run) for run in runs])
 
 
 @router.get("/export.csv")
@@ -104,17 +80,18 @@ async def export_runs_csv(
     writer = csv.writer(output, lineterminator="\n")
     writer.writerow(
         [
-            "id",
+            "run_id",
             "runner_name",
             "age_group",
-            "course_name",
-            "course_revision",
+            "course",
             "mode",
             "status",
-            "elapsed_ms",
             "started_at",
             "finished_at",
-            "created_at",
+            "elapsed_ms",
+            "elapsed_display",
+            "source",
+            "notes",
         ]
     )
     for run in db.scalars(statement):
@@ -124,13 +101,14 @@ async def export_runs_csv(
                 run.runner_name_snapshot,
                 run.age_group_snapshot,
                 run.course_name_snapshot,
-                run.course_revision_snapshot,
                 run.mode,
                 run.status,
-                run.elapsed_ms,
                 run.started_at,
                 run.finished_at,
-                run.created_at,
+                run.elapsed_ms,
+                _elapsed_display(run.elapsed_ms),
+                run.source,
+                run.notes,
             ]
         )
 
@@ -141,12 +119,22 @@ async def export_runs_csv(
     )
 
 
+def _elapsed_display(elapsed_ms: int | None) -> str:
+    if elapsed_ms is None:
+        return ""
+    minutes, remainder = divmod(elapsed_ms, 60_000)
+    seconds, milliseconds = divmod(remainder, 1_000)
+    if minutes:
+        return f"{minutes}:{seconds:02}.{milliseconds:03}"
+    return f"{seconds}.{milliseconds:03}"
+
+
 @router.get("/{run_id}")
 async def get_run(run_id: int, db: Session = Depends(get_db)):
     run = RunRepository(db).get(run_id)
     if run is None or run.deleted_at is not None:
         return _error(status.HTTP_404_NOT_FOUND, "NOT_FOUND", f"Run {run_id} was not found.")
-    return _ok(_run_response(run))
+    return _ok(run_response(run))
 
 
 @router.patch("/{run_id}")
@@ -180,7 +168,10 @@ async def update_run(
             target_id=run.id,
         )
     db.commit()
-    return _ok(_run_response(run))
+    data = run_response(run)
+    await event_bus.publish("run.saved", {"run": data})
+    await event_bus.publish("leaderboard.updated", {"run_id": run.id})
+    return _ok(data)
 
 
 @router.delete("/{run_id}")
@@ -200,4 +191,7 @@ async def delete_run(
         target_id=run.id,
     )
     db.commit()
-    return _ok(_run_response(run))
+    data = run_response(run)
+    await event_bus.publish("leaderboard.updated", {"run_id": run.id, "deleted": True})
+    await event_bus.publish("run.saved", {"run": data})
+    return _ok(data)

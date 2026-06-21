@@ -3,10 +3,11 @@ from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from app.api.response_models import queue_entry_response
 from app.db.database import get_db
-from app.db.models import Course, CourseRevision, QueueEntry
 from app.db.repositories import AuditRepository
 from app.db.schemas import QueueEntryCreate, QueueEntryUpdate, QueueRecoverRequest
+from app.services.event_bus import event_bus
 from app.services.queue_service import (
     active_queue,
     add_queue_entry,
@@ -29,45 +30,6 @@ def _error(http_status: int, code: str, message: str) -> JSONResponse:
     )
 
 
-def _queue_entry_response(db: Session, entry: QueueEntry) -> dict:
-    course = db.get(Course, entry.course_id)
-    revision = (
-        db.get(CourseRevision, entry.course_revision_id)
-        if entry.course_revision_id is not None
-        else None
-    )
-    return {
-        "id": entry.id,
-        "request_id": entry.request_id,
-        "session_id": entry.session_id,
-        "athlete_id": entry.athlete_id,
-        "position": entry.position,
-        "sort_key": entry.sort_key,
-        "version": entry.version,
-        "runner_name": entry.runner_name_snapshot,
-        "age_group": entry.age_group_snapshot,
-        "course": (
-            {"id": course.id, "slug": course.slug, "name": course.name}
-            if course is not None
-            else None
-        ),
-        "course_revision": (
-            {
-                "id": revision.id,
-                "revision_code": revision.revision_code,
-                "revision_start_date": revision.revision_start_date,
-                "revision_end_date": revision.revision_end_date,
-            }
-            if revision is not None
-            else None
-        ),
-        "mode": entry.mode,
-        "status": entry.status,
-        "source": entry.source,
-        "created_at": entry.created_at,
-    }
-
-
 @router.get("")
 async def get_queue(
     session_id: int | None = None,
@@ -76,7 +38,7 @@ async def get_queue(
     db: Session = Depends(get_db),
 ) -> dict:
     entries = active_queue(db, session_id=session_id, status=status_filter, limit=limit)
-    return _ok([_queue_entry_response(db, entry) for entry in entries])
+    return _ok([queue_entry_response(db, entry) for entry in entries])
 
 
 @router.post("")
@@ -87,7 +49,9 @@ async def create_queue_entry(
     try:
         entry = add_queue_entry(db, payload)
         db.commit()
-        return _ok(_queue_entry_response(db, entry))
+        data = queue_entry_response(db, entry)
+        await event_bus.publish("queue.updated", {"entry": data})
+        return _ok(data)
     except ValueError as exc:
         db.rollback()
         return _error(status.HTTP_404_NOT_FOUND, "NOT_FOUND", str(exc))
@@ -121,7 +85,9 @@ async def patch_queue_entry(
         request_id=payload.request_id,
     )
     db.commit()
-    return _ok(_queue_entry_response(db, entry))
+    data = queue_entry_response(db, entry)
+    await event_bus.publish("queue.updated", {"entry": data})
+    return _ok(data)
 
 
 @router.post("/recover")
@@ -141,7 +107,9 @@ async def recover_queue_entries(
         target_type="queue",
     )
     db.commit()
-    return _ok([_queue_entry_response(db, entry) for entry in entries])
+    data = [queue_entry_response(db, entry) for entry in entries]
+    await event_bus.publish("queue.updated", {"entries": data})
+    return _ok(data)
 
 
 @router.delete("/{queue_entry_id}")
@@ -164,4 +132,6 @@ async def delete_queue_entry(
         target_id=entry.id,
     )
     db.commit()
-    return _ok(_queue_entry_response(db, entry))
+    data = queue_entry_response(db, entry)
+    await event_bus.publish("queue.updated", {"entry": data})
+    return _ok(data)

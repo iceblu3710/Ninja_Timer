@@ -179,3 +179,32 @@ class TimerDnfRequest(BaseModel):
 
 class TimerDeleteLastRunRequest(BaseModel):
     reason: str | None = None
+
+
+class AdminLoginRequest(BaseModel):
+    pin: str
+
+
+class SettingChange(BaseModel):
+    value: object
+    version: int | None = None
+
+
+class SettingsPatchRequest(BaseModel):
+    request_id: str | None = None
+    changes: dict[str, SettingChange]
+    apply_immediately: bool = True
+
+
+class SettingsValidateRequest(BaseModel):
+    changes: dict[str, SettingChange]
+
+
+class SettingRollbackRequest(BaseModel):
+    request_id: str | None = None
+    reason: str | None = None
+
+
+class BackupCreateRequest(BaseModel):
+    request_id: str | None = None
+    reason: str | None = None

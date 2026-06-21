@@ -15,3 +15,10 @@ hardware:
   driver: simulated  # simulated, arduino, m5stamp
   countdown_seconds: 3
   default_mode: open_gym  # open_gym, party, competition
+
+security:
+  admin_pin: "1234"
+  admin_session_seconds: 43200
+
+operations:
+  backup_retention_days: 30

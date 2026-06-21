@@ -438,6 +438,104 @@
 
     .setting-card { padding: 18px; min-height: 220px; }
 
+    .course-admin-panel {
+      margin-top: 16px;
+      padding: 20px;
+    }
+
+    .panel-heading {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .admin-auth-row {
+      display: grid;
+      grid-template-columns: minmax(150px, 220px) auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .designer-grid {
+      display: grid;
+      grid-template-columns: minmax(260px, .72fr) minmax(0, 1fr);
+      gap: 18px;
+      margin-top: 14px;
+    }
+
+    .designer-fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .designer-fields .full { grid-column: 1 / -1; }
+
+    .text-input, .text-area, .select-input {
+      width: 100%;
+      border: 1px solid rgba(125,43,214,.62);
+      border-radius: 8px;
+      background: rgba(0,0,0,.34);
+      color: var(--white);
+      padding: 12px 14px;
+      font-family: var(--font-ui);
+      font-weight: 900;
+    }
+
+    .text-area {
+      min-height: 112px;
+      resize: vertical;
+      line-height: 1.4;
+    }
+
+    .form-label {
+      display: block;
+      color: var(--purple-2);
+      font-size: 12px;
+      font-weight: 1000;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .action-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .mini-action {
+      min-height: 40px;
+      border: 1px solid rgba(246,200,47,.45);
+      border-radius: 8px;
+      background: rgba(246,200,47,.12);
+      color: var(--gold);
+      cursor: pointer;
+      font-weight: 1000;
+      letter-spacing: .8px;
+      padding: 9px 12px;
+      text-transform: uppercase;
+    }
+
+    .mini-action.danger {
+      border-color: rgba(255,69,69,.45);
+      color: var(--red);
+      background: rgba(255,69,69,.08);
+    }
+
+    .course-summary {
+      padding: 12px;
+      border: 1px solid rgba(125,43,214,.32);
+      border-radius: 8px;
+      background: rgba(255,255,255,.025);
+      color: var(--muted);
+      font-weight: 900;
+      line-height: 1.35;
+    }
+
     .choice {
       display: flex;
       align-items: center;
@@ -550,6 +648,18 @@
       font-weight: 1000;
     }
     .queue-num { color: var(--purple-2); border: 1px solid var(--line); display: grid; place-items: center; height: 34px; border-radius: 6px; }
+    .queue-actions { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
+    .queue-action {
+      min-height: 32px;
+      border: 1px solid rgba(125,43,214,.45);
+      border-radius: 7px;
+      background: rgba(255,255,255,.035);
+      color: var(--white);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 1000;
+      text-transform: uppercase;
+    }
 
     .kiosk-grid {
       display: grid;
@@ -646,6 +756,7 @@
 
     @media (max-width: 1200px) {
       .display-grid, .admin-grid, .kiosk-grid { grid-template-columns: 1fr; }
+      .designer-grid { grid-template-columns: 1fr; }
       .settings-row { grid-template-columns: repeat(2, 1fr); }
       .control-row { grid-template-columns: repeat(2, 1fr); }
       .topbar { grid-template-columns: 1fr; text-align: center; }
@@ -655,6 +766,7 @@
     @media (max-width: 740px) {
       .app-shell { padding: 14px; }
       .info-cards, .age-grid, .course-grid { grid-template-columns: 1fr; }
+      .designer-fields, .admin-auth-row { grid-template-columns: 1fr; }
       .settings-row, .control-row { grid-template-columns: 1fr; }
       .timer-card { min-height: 520px; }
       .rank-row { grid-template-columns: 32px 1fr auto; font-size: 16px; }
@@ -744,13 +856,46 @@
             </div>
           </article>
 
+          <article class="panel course-admin-panel">
+            <div class="panel-heading">
+              <h2 class="section-title">Course Designer</h2>
+              <div class="admin-auth-row">
+                <input class="text-input" id="adminPinInput" type="password" inputmode="numeric" placeholder="Admin PIN" autocomplete="current-password">
+                <button class="mini-action" id="adminLoginBtn">Unlock</button>
+              </div>
+              <span class="choice" id="adminAuthStatus">Locked</span>
+            </div>
+
+            <div class="designer-grid">
+              <div>
+                <label class="form-label" for="adminCourseSelect">Course</label>
+                <select class="select-input" id="adminCourseSelect"></select>
+                <div class="course-summary" id="adminCourseSummary">No courses loaded.</div>
+                <div class="action-row">
+                  <button class="mini-action" id="newCourseBtn">New Course</button>
+                  <button class="mini-action" id="saveCourseBtn">Save Course</button>
+                  <button class="mini-action danger" id="disableCourseBtn">Disable</button>
+                </div>
+              </div>
+
+              <div class="designer-fields">
+                <label><span class="form-label">Course Name</span><input class="text-input" id="courseNameInput" placeholder="Speed Gauntlet"></label>
+                <label><span class="form-label">Slug</span><input class="text-input" id="courseSlugInput" placeholder="speed-gauntlet"></label>
+                <label class="full"><span class="form-label">Course Notes</span><textarea class="text-area" id="courseDescriptionInput" placeholder="What this course is used for"></textarea></label>
+                <label><span class="form-label">Layout Name</span><input class="text-input" id="revisionNameInput" placeholder="Week 1 Layout"></label>
+                <label><span class="form-label">Obstacle Count</span><input class="text-input" id="obstacleCountInput" type="number" min="0" step="1" placeholder="6"></label>
+                <label><span class="form-label">Start Date</span><input class="text-input" id="revisionStartInput" type="date"></label>
+                <label><span class="form-label">Leaderboard</span><select class="select-input" id="leaderboardEligibleInput"><option value="true">Eligible</option><option value="false">Practice Only</option></select></label>
+                <label class="full"><span class="form-label">Layout Design Notes</span><textarea class="text-area" id="layoutNotesInput" placeholder="List obstacles, order, rules, penalties, and sensor notes"></textarea></label>
+                <div class="action-row full">
+                  <button class="mini-action" id="newRevisionBtn">Save New Layout</button>
+                  <button class="mini-action" id="updateRevisionBtn">Update Current Layout</button>
+                </div>
+              </div>
+            </div>
+          </article>
+
           <div class="settings-row">
-            <section class="panel setting-card">
-              <h3 class="section-title">Course</h3>
-              <div class="iconbox">CRS</div>
-              <p><strong>Speed Gauntlet</strong></p>
-              <div class="choice selected">Course Settings</div>
-            </section>
             <section class="panel setting-card">
               <h3 class="section-title">Mode</h3>
               <div class="choice selected">Open Gym</div>
@@ -827,10 +972,7 @@
           </div>
 
           <label class="field-label">Course</label>
-          <div class="course-grid">
-            <button class="course-btn selected">Speed Gauntlet<small>Fast. Focused. Obstacle Race.</small></button>
-            <button class="course-btn">Ninja Challenge<small>Technical. Creative. No Limits.</small></button>
-          </div>
+          <div class="course-grid" id="courseGrid"></div>
 
           <button class="join-btn" id="joinQueueBtn">Join Queue >></button>
         </article>
@@ -885,6 +1027,7 @@ WS     /api/v1/ws/live</code></pre>
     class ApiClient {
       constructor({ baseUrl = '/api/v1' } = {}) {
         this.baseUrl = baseUrl;
+        this.adminToken = localStorage.getItem('adminToken') || '';
       }
 
       async getStatus() { return this.get('/status'); }
@@ -901,6 +1044,34 @@ WS     /api/v1/ws/live</code></pre>
       async getAllTimeLeaderboard() { return this.get('/leaderboards/all-time?limit=10'); }
       async getPersonalBests() { return this.get('/leaderboards/personal-bests?limit=5'); }
       async joinQueue(payload) { return this.post('/queue', payload); }
+      async loginAdmin(pin) {
+        const data = await this.post('/auth/login', { pin });
+        this.setAdminToken(data.token);
+        return data;
+      }
+      async getCourses() { return this.get('/courses'); }
+      async createCourse(payload) { return this.post('/courses', payload); }
+      async updateCourse(courseId, payload) { return this.patch(`/courses/${courseId}`, payload); }
+      async disableCourse(courseId) { return this.delete(`/courses/${courseId}`); }
+      async createCourseRevision(courseId, payload) {
+        return this.post(`/courses/${courseId}/revisions`, payload);
+      }
+      async updateCourseRevision(revisionId, payload) {
+        return this.patch(`/course-revisions/${revisionId}`, payload);
+      }
+      async armQueueEntry(queueEntryId) {
+        return this.post('/timer/arm', { queue_entry_id: queueEntryId });
+      }
+      async updateQueueEntry(queueEntryId, payload) {
+        return this.patch(`/queue/${queueEntryId}`, payload);
+      }
+      async cancelQueueEntry(queueEntryId) { return this.delete(`/queue/${queueEntryId}`); }
+
+      setAdminToken(token) {
+        this.adminToken = token || '';
+        if (this.adminToken) localStorage.setItem('adminToken', this.adminToken);
+        else localStorage.removeItem('adminToken');
+      }
 
       async get(path) {
         const response = await fetch(this.baseUrl + path);
@@ -910,10 +1081,33 @@ WS     /api/v1/ws/live</code></pre>
       async post(path, body = {}) {
         const response = await fetch(this.baseUrl + path, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.headers(),
           body: JSON.stringify(body)
         });
         return this.unwrap(response, `POST ${path}`);
+      }
+
+      async patch(path, body = {}) {
+        const response = await fetch(this.baseUrl + path, {
+          method: 'PATCH',
+          headers: this.headers(),
+          body: JSON.stringify(body)
+        });
+        return this.unwrap(response, `PATCH ${path}`);
+      }
+
+      async delete(path) {
+        const response = await fetch(this.baseUrl + path, {
+          method: 'DELETE',
+          headers: this.headers()
+        });
+        return this.unwrap(response, `DELETE ${path}`);
+      }
+
+      headers() {
+        const headers = { 'Content-Type': 'application/json' };
+        if (this.adminToken) headers['X-Admin-Token'] = this.adminToken;
+        return headers;
       }
 
       async unwrap(response, label) {
@@ -936,6 +1130,9 @@ WS     /api/v1/ws/live</code></pre>
       today: [],
       allTime: [],
       personalBests: [],
+      courses: [],
+      selectedCourseId: null,
+      selectedRevisionId: null,
       timerSyncedAt: Date.now(),
       reconnectTimer: null,
       ws: null
@@ -961,6 +1158,34 @@ WS     /api/v1/ws/live</code></pre>
 
     function rowName(row) {
       return row.runner_name || row.runner || row.name || 'Unknown';
+    }
+
+    function currentCourse() {
+      return appState.courses.find(course => String(course.id) === String(appState.selectedCourseId)) || appState.courses[0] || null;
+    }
+
+    function currentRevision(course = currentCourse()) {
+      if (!course) return null;
+      return course.open_revision || course.revisions?.[0] || null;
+    }
+
+    function selectedKioskCourse() {
+      const button = $('.course-btn.selected');
+      return appState.courses.find(course => String(course.id) === String(button?.dataset.courseId)) || appState.courses[0] || null;
+    }
+
+    function fieldValue(selector) {
+      return $(selector).value.trim();
+    }
+
+    function nullableField(selector) {
+      const value = fieldValue(selector);
+      return value ? value : null;
+    }
+
+    function numberField(selector) {
+      const value = fieldValue(selector);
+      return value ? Number(value) : null;
     }
 
     function renderRankRows(target, rows, options = {}) {
@@ -996,11 +1221,50 @@ WS     /api/v1/ws/live</code></pre>
       const queue = appState.queue;
       $('#nextUp').textContent = (queue[0]?.runner_name || 'NONE').toUpperCase();
       $('#queueList').innerHTML = queue.slice(0, 5).map((item, i) => (
-        `<div class="queue-row"><span class="queue-num">${i + 1}</span><strong>${escapeHtml(item.runner_name)}</strong><span>${escapeHtml(item.age_group || '-')} YEARS</span></div>`
+        `<div class="queue-row"><span class="queue-num">${i + 1}</span><strong>${escapeHtml(item.runner_name)}<br><small>${escapeHtml(item.course?.name || '-')}</small></strong><span class="queue-actions"><button class="queue-action" data-queue-action="arm" data-entry-id="${item.id}">Arm</button><button class="queue-action" data-queue-action="skip" data-entry-id="${item.id}" data-version="${item.version}">Skip</button><button class="queue-action" data-queue-action="cancel" data-entry-id="${item.id}">Remove</button></span></div>`
       )).join('');
       $('#kioskQueue').innerHTML = queue.slice(0, 2).map((item, i) => (
         `<div class="rank-row"><span class="rank">${i + 1}</span><span>${escapeHtml(item.runner_name)}</span><span>${escapeHtml(item.age_group || '-')} YEARS</span></div>`
       )).join('');
+    }
+
+    function renderCourses() {
+      if (appState.courses.length && !currentCourse()) {
+        appState.selectedCourseId = appState.courses[0].id;
+      }
+      const course = currentCourse();
+      const revision = currentRevision(course);
+      appState.selectedRevisionId = revision?.id || null;
+
+      $('#adminAuthStatus').textContent = api.adminToken ? 'Unlocked' : 'Locked';
+      $('#adminAuthStatus').classList.toggle('selected', Boolean(api.adminToken));
+      $('#adminCourseSelect').innerHTML = appState.courses.map(item => (
+        `<option value="${item.id}">${escapeHtml(item.name)}</option>`
+      )).join('');
+      if (course) $('#adminCourseSelect').value = String(course.id);
+
+      $('#courseGrid').innerHTML = appState.courses.map((item, index) => {
+        const selected = course && item.id === course.id ? ' selected' : index === 0 && !course ? ' selected' : '';
+        const detail = item.open_revision?.revision_name || item.description || 'Open layout';
+        return `<button class="course-btn${selected}" data-course-id="${item.id}" data-course-slug="${escapeHtml(item.slug)}">${escapeHtml(item.name)}<small>${escapeHtml(detail)}</small></button>`;
+      }).join('');
+
+      $('#courseNameInput').value = course?.name || '';
+      $('#courseSlugInput').value = course?.slug || '';
+      $('#courseDescriptionInput').value = course?.description || '';
+      $('#revisionNameInput').value = revision?.revision_name || '';
+      $('#obstacleCountInput').value = revision?.obstacle_count ?? '';
+      $('#revisionStartInput').value = revision?.revision_start_date || '';
+      $('#leaderboardEligibleInput').value = String(revision?.leaderboard_eligible ?? true);
+      $('#layoutNotesInput').value = revision?.layout_notes || '';
+
+      if (!course) {
+        $('#adminCourseSummary').textContent = 'No courses loaded.';
+        return;
+      }
+      const revisionLabel = revision ? revision.revision_name : 'No active layout';
+      const obstacleLabel = revision?.obstacle_count ? `${revision.obstacle_count} obstacles` : 'Obstacle count not set';
+      $('#adminCourseSummary').innerHTML = `<strong>${escapeHtml(course.name)}</strong><br>${escapeHtml(revisionLabel)}<br>${escapeHtml(obstacleLabel)}`;
     }
 
     function renderRunsAndLeaderboards() {
@@ -1021,14 +1285,16 @@ WS     /api/v1/ws/live</code></pre>
 
     function renderAllFromState() {
       renderTimer();
+      renderCourses();
       renderQueue();
       renderRunsAndLeaderboards();
     }
 
     async function renderAll() {
-      const [status, timer, queue, recent, today, allTime, personalBests] = await Promise.all([
+      const [status, timer, courses, queue, recent, today, allTime, personalBests] = await Promise.all([
         api.getStatus(),
         api.getTimerState(),
+        api.getCourses(),
         api.getQueue(),
         api.getRecentRuns(),
         api.getTodayLeaderboard(),
@@ -1036,6 +1302,8 @@ WS     /api/v1/ws/live</code></pre>
         api.getPersonalBests()
       ]);
       appState.timer = timer;
+      appState.courses = courses;
+      appState.selectedCourseId = appState.selectedCourseId || courses[0]?.id || null;
       appState.queue = queue;
       appState.recent = recent;
       appState.today = today;
@@ -1044,6 +1312,12 @@ WS     /api/v1/ws/live</code></pre>
       appState.timerSyncedAt = Date.now();
       $('#systemStatus').textContent = status.app?.status ? titleize(status.app.status) : 'Running';
       renderAllFromState();
+    }
+
+    async function refreshCourses() {
+      appState.courses = await api.getCourses();
+      if (!currentCourse()) appState.selectedCourseId = appState.courses[0]?.id || null;
+      renderCourses();
     }
 
     async function refreshQueue() {
@@ -1087,6 +1361,40 @@ WS     /api/v1/ws/live</code></pre>
       view.classList.add('active');
     }
 
+    function coursePayload() {
+      return {
+        name: fieldValue('#courseNameInput'),
+        slug: nullableField('#courseSlugInput'),
+        description: nullableField('#courseDescriptionInput')
+      };
+    }
+
+    function revisionPayload(closeCurrentRevision = true) {
+      return {
+        revision_name: fieldValue('#revisionNameInput'),
+        revision_start_date: nullableField('#revisionStartInput'),
+        obstacle_count: numberField('#obstacleCountInput'),
+        layout_notes: nullableField('#layoutNotesInput'),
+        leaderboard_eligible: $('#leaderboardEligibleInput').value === 'true',
+        close_current_revision: closeCurrentRevision
+      };
+    }
+
+    function clearDesignerForNewCourse() {
+      appState.selectedCourseId = null;
+      appState.selectedRevisionId = null;
+      $('#adminCourseSelect').value = '';
+      $('#courseNameInput').value = '';
+      $('#courseSlugInput').value = '';
+      $('#courseDescriptionInput').value = '';
+      $('#revisionNameInput').value = '';
+      $('#obstacleCountInput').value = '';
+      $('#revisionStartInput').value = new Date().toISOString().slice(0, 10);
+      $('#leaderboardEligibleInput').value = 'true';
+      $('#layoutNotesInput').value = '';
+      $('#adminCourseSummary').textContent = 'Design a new course and save it to make it available.';
+    }
+
     const initialView = location.pathname.replace(/^\/+/, '') || 'display';
     activateView(initialView);
 
@@ -1116,10 +1424,124 @@ WS     /api/v1/ws/live</code></pre>
       button.classList.add('selected');
     }));
 
-    $$('.course-btn').forEach(button => button.addEventListener('click', () => {
+    $('#courseGrid').addEventListener('click', event => {
+      const button = event.target.closest('.course-btn');
+      if (!button) return;
+      appState.selectedCourseId = Number(button.dataset.courseId);
       $$('.course-btn').forEach(x => x.classList.remove('selected'));
       button.classList.add('selected');
-    }));
+      renderCourses();
+    });
+
+    $('#queueList').addEventListener('click', async event => {
+      const button = event.target.closest('[data-queue-action]');
+      if (!button) return;
+      const entryId = Number(button.dataset.entryId);
+      const action = button.dataset.queueAction;
+      try {
+        if (action === 'arm') {
+          const result = await api.armQueueEntry(entryId);
+          appState.timer = result;
+          appState.timerSyncedAt = Date.now();
+          renderTimer();
+        } else if (action === 'skip') {
+          await api.updateQueueEntry(entryId, {
+            request_id: `admin-skip-${Date.now()}`,
+            version: Number(button.dataset.version),
+            status: 'SKIPPED'
+          });
+        } else if (action === 'cancel') {
+          await api.cancelQueueEntry(entryId);
+        }
+        await refreshQueue();
+        showToast(`Queue ${titleize(action)} complete`);
+      } catch (error) {
+        showToast(error.message);
+      }
+    });
+
+    $('#adminLoginBtn').addEventListener('click', async () => {
+      try {
+        await api.loginAdmin($('#adminPinInput').value);
+        $('#adminPinInput').value = '';
+        renderCourses();
+        showToast('Admin unlocked');
+      } catch (error) {
+        showToast(error.message);
+      }
+    });
+
+    $('#adminCourseSelect').addEventListener('change', () => {
+      appState.selectedCourseId = Number($('#adminCourseSelect').value);
+      renderCourses();
+    });
+
+    $('#newCourseBtn').addEventListener('click', clearDesignerForNewCourse);
+
+    $('#saveCourseBtn').addEventListener('click', async () => {
+      try {
+        if (appState.selectedCourseId) {
+          await api.updateCourse(appState.selectedCourseId, coursePayload());
+          showToast('Course saved');
+        } else {
+          const payload = {
+            ...coursePayload(),
+            first_revision_name: fieldValue('#revisionNameInput') || null,
+            revision_start_date: nullableField('#revisionStartInput'),
+            layout_notes: nullableField('#layoutNotesInput'),
+            obstacle_count: numberField('#obstacleCountInput')
+          };
+          const created = await api.createCourse(payload);
+          appState.selectedCourseId = created.id;
+          showToast('Course created');
+        }
+        await refreshCourses();
+      } catch (error) {
+        showToast(error.message);
+      }
+    });
+
+    $('#disableCourseBtn').addEventListener('click', async () => {
+      if (!appState.selectedCourseId || !confirm('Disable this course?')) return;
+      try {
+        await api.disableCourse(appState.selectedCourseId);
+        appState.selectedCourseId = null;
+        await refreshCourses();
+        showToast('Course disabled');
+      } catch (error) {
+        showToast(error.message);
+      }
+    });
+
+    $('#newRevisionBtn').addEventListener('click', async () => {
+      if (!appState.selectedCourseId) {
+        showToast('Save the course before adding layouts');
+        return;
+      }
+      try {
+        await api.createCourseRevision(appState.selectedCourseId, revisionPayload(true));
+        await refreshCourses();
+        showToast('New layout saved');
+      } catch (error) {
+        showToast(error.message);
+      }
+    });
+
+    $('#updateRevisionBtn').addEventListener('click', async () => {
+      if (!appState.selectedRevisionId) {
+        showToast('No active layout selected');
+        return;
+      }
+      try {
+        const payload = revisionPayload(false);
+        delete payload.close_current_revision;
+        await api.updateCourseRevision(appState.selectedRevisionId, payload);
+        await refreshCourses();
+        showToast('Layout updated');
+      } catch (error) {
+        showToast(error.message);
+      }
+    });
 
     $('#fakeName').addEventListener('click', () => {
       const name = prompt('Runner name', 'RILEY');
@@ -1130,14 +1552,13 @@ WS     /api/v1/ws/live</code></pre>
       const raw = $('#fakeName').textContent.replace('EDIT', '').trim();
       const name = raw.startsWith('Tap') ? 'RILEY' : raw;
       const age = $('.age-btn.selected').childNodes[0].textContent.trim();
-      const speedSelected = $('.course-btn.selected').textContent.includes('Speed');
-      const course_slug = speedSelected ? 'speed-gauntlet' : 'ninja-challenge';
+      const course = selectedKioskCourse();
       try {
         await api.joinQueue({
           request_id: `kiosk-${Date.now()}`,
           name,
           age_group: age,
-          course_slug
+          course_slug: course?.slug
         });
         showToast(`${name.toUpperCase()} joined the queue`);
         await refreshQueue();
@@ -1186,6 +1607,8 @@ WS     /api/v1/ws/live</code></pre>
           await refreshRuns();
         } else if (message.type === 'leaderboard.updated') {
           await refreshLeaderboards();
+        } else if (message.type === 'courses.updated') {
+          await refreshCourses();
         } else if (message.type === 'system.toast' && message.data?.message) {
           showToast(message.data.message);
         }

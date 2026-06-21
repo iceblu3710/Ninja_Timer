@@ -7,9 +7,14 @@ Local-first timing backend for Dynasty Ninja courses. The project provides a Fas
 - FastAPI application served from `app.main:app`
 - Static UI pages for display, admin, and kiosk workflows
 - `/api/v1/status` health endpoint with app, config, database, and hardware status
+- `/api/v1/auth/login` local admin PIN session endpoint
+- `/api/v1/settings` validated settings API with version checks and rollback
+- `/api/v1/ops/backups`, `/api/v1/ops/logs/{filename}`, and `/api/v1/ops/system-events`
+  for local gym operations
 - SQLite database initialization with WAL-friendly pragmas
 - Idempotent seed data for default courses and an active Open Gym session
 - Queue-entry service with request-id idempotency
+- CSV run export using the V1 operations column contract
 - Alembic migration scaffold for persistence schema management
 - Pytest coverage for database initialization, SQLite pragmas, and queue persistence
 
@@ -34,6 +39,24 @@ Use the included development script:
 
 ```powershell
 .\scripts\run_dev.ps1
+```
+
+For local production-style gym testing without auto-reload:
+
+```powershell
+.\scripts\run_prod.ps1
+```
+
+The display kiosk helper launches Microsoft Edge fullscreen:
+
+```powershell
+.\scripts\launch_display_kiosk.ps1
+```
+
+To register the backend at Windows logon for the current user:
+
+```powershell
+.\scripts\register_startup_task.ps1
 ```
 
 To run on a different port:
@@ -64,6 +87,9 @@ Runtime settings are loaded from [config/settings.yaml](config/settings.yaml). E
 - `DEBUG`: enables debug mode when set to `true`
 - `PORT`: default server port used by settings
 - `RELOAD`: enables reload mode when set to `true`
+- `ADMIN_PIN`: local admin PIN for protected operations
+- `ADMIN_SESSION_SECONDS`: admin token lifetime
+- `BACKUP_RETENTION_DAYS`: database backup retention window
 
 The default database is:
 

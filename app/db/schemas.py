@@ -29,6 +29,51 @@ class CourseRevisionRead(OrmSchema):
     updated_at: str
 
 
+class CourseCreate(BaseModel):
+    slug: str | None = None
+    name: str
+    description: str | None = None
+    first_revision_name: str | None = None
+    revision_start_date: str | None = None
+    layout_notes: str | None = None
+    obstacle_count: int | None = None
+
+
+class CourseUpdate(BaseModel):
+    slug: str | None = None
+    name: str | None = None
+    description: str | None = None
+    active: bool | None = None
+
+
+class CourseRevisionCreate(BaseModel):
+    revision_name: str
+    revision_start_date: str | None = None
+    revision_end_date: str | None = None
+    description: str | None = None
+    obstacle_count: int | None = None
+    layout_notes: str | None = None
+    rules_json: str | None = None
+    leaderboard_eligible: bool = True
+    close_current_revision: bool = True
+
+
+class CourseRevisionUpdate(BaseModel):
+    revision_name: str | None = None
+    revision_start_date: str | None = None
+    revision_end_date: str | None = None
+    description: str | None = None
+    obstacle_count: int | None = None
+    layout_notes: str | None = None
+    rules_json: str | None = None
+    leaderboard_eligible: bool | None = None
+    active: bool | None = None
+
+
+class CourseRevisionCloseRequest(BaseModel):
+    revision_end_date: str | None = None
+
+
 class SessionRead(OrmSchema):
     id: int
     name: str

@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api import (
     routes_auth,
+    routes_courses,
     routes_leaderboards,
     routes_ops,
     routes_queue,
@@ -49,6 +50,7 @@ def create_app() -> FastAPI:
     app.include_router(routes_status.router)
     app.include_router(routes_auth.router)
     app.include_router(routes_timer.router)
+    app.include_router(routes_courses.router)
     app.include_router(routes_queue.router)
     app.include_router(routes_runs.router)
     app.include_router(routes_leaderboards.router)

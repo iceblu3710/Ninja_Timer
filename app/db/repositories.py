@@ -40,8 +40,19 @@ class CourseRepository:
     def get_by_id(self, course_id: int) -> Course | None:
         return self.db.get(Course, course_id)
 
+    def get_revision(self, course_revision_id: int) -> CourseRevision | None:
+        return self.db.get(CourseRevision, course_revision_id)
+
     def list_active(self) -> list[Course]:
         statement = select(Course).where(Course.active.is_(True)).order_by(Course.name)
+        return list(self.db.scalars(statement))
+
+    def list_revisions(self, course_id: int) -> list[CourseRevision]:
+        statement = (
+            select(CourseRevision)
+            .where(CourseRevision.course_id == course_id)
+            .order_by(CourseRevision.revision_start_date.desc(), CourseRevision.id.desc())
+        )
         return list(self.db.scalars(statement))
 
     def create(self, slug: str, name: str, description: str | None = None) -> Course:
@@ -58,6 +69,13 @@ class CourseRepository:
         self.db.flush()
         return course
 
+    def update_course(self, course: Course, **values: Any) -> Course:
+        for key, value in values.items():
+            setattr(course, key, value)
+        course.updated_at = utc_now()
+        self.db.flush()
+        return course
+
     def get_open_revision(self, course_id: int) -> CourseRevision | None:
         statement = select(CourseRevision).where(
             CourseRevision.course_id == course_id,
@@ -71,6 +89,11 @@ class CourseRepository:
         course: Course,
         start_date: str | None = None,
         description: str | None = None,
+        revision_name: str | None = None,
+        obstacle_count: int | None = None,
+        layout_notes: str | None = None,
+        rules_json: str | None = None,
+        leaderboard_eligible: bool = True,
     ) -> CourseRevision:
         existing = self.get_open_revision(course.id)
         if existing is not None:
@@ -81,15 +104,15 @@ class CourseRepository:
         now = utc_now()
         revision = CourseRevision(
             course_id=course.id,
-            revision_code=revision_code,
-            revision_name=f"{course.name} Open Layout",
+            revision_code=self._unique_revision_code(revision_code),
+            revision_name=revision_name or f"{course.name} Open Layout",
             revision_start_date=revision_start,
             revision_end_date=None,
             description=description,
-            obstacle_count=None,
-            layout_notes=None,
-            rules_json=None,
-            leaderboard_eligible=True,
+            obstacle_count=obstacle_count,
+            layout_notes=layout_notes,
+            rules_json=rules_json,
+            leaderboard_eligible=leaderboard_eligible,
             active=True,
             created_at=now,
             updated_at=now,
@@ -97,6 +120,79 @@ class CourseRepository:
         self.db.add(revision)
         self.db.flush()
         return revision
+
+    def create_revision(
+        self,
+        course: Course,
+        *,
+        revision_name: str,
+        revision_start_date: str | None = None,
+        revision_end_date: str | None = None,
+        description: str | None = None,
+        obstacle_count: int | None = None,
+        layout_notes: str | None = None,
+        rules_json: str | None = None,
+        leaderboard_eligible: bool = True,
+        close_current_revision: bool = True,
+    ) -> CourseRevision:
+        revision_start = revision_start_date or today_utc_date()
+        if close_current_revision:
+            current = self.get_open_revision(course.id)
+            if current is not None:
+                self.close_revision(current, end_date=revision_start)
+
+        if revision_end_date is None and self.get_open_revision(course.id) is not None:
+            raise ValueError(f"Course {course.slug} already has an open revision")
+
+        end_code = revision_end_date or "open"
+        now = utc_now()
+        revision = CourseRevision(
+            course_id=course.id,
+            revision_code=self._unique_revision_code(
+                f"{course.slug}-{revision_start}-to-{end_code}"
+            ),
+            revision_name=revision_name,
+            revision_start_date=revision_start,
+            revision_end_date=revision_end_date,
+            description=description,
+            obstacle_count=obstacle_count,
+            layout_notes=layout_notes,
+            rules_json=rules_json,
+            leaderboard_eligible=leaderboard_eligible,
+            active=True,
+            created_at=now,
+            updated_at=now,
+        )
+        self.db.add(revision)
+        self.db.flush()
+        return revision
+
+    def update_revision(self, revision: CourseRevision, **values: Any) -> CourseRevision:
+        for key, value in values.items():
+            setattr(revision, key, value)
+        revision.updated_at = utc_now()
+        self.db.flush()
+        return revision
+
+    def close_revision(
+        self,
+        revision: CourseRevision,
+        *,
+        end_date: str | None = None,
+    ) -> CourseRevision:
+        revision.revision_end_date = end_date or today_utc_date()
+        revision.active = False
+        revision.updated_at = utc_now()
+        self.db.flush()
+        return revision
+
+    def _unique_revision_code(self, base_code: str) -> str:
+        code = base_code
+        suffix = 2
+        while self.db.scalar(select(CourseRevision.id).where(CourseRevision.revision_code == code)):
+            code = f"{base_code}-{suffix}"
+            suffix += 1
+        return code
 
 
 class SessionRepository:

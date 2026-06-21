@@ -1,31 +1,3 @@
-Metadata-Version: 2.4
-Name: dynasty-ninja-timer
-Version: 0.1.0
-Summary: Local-first Python backend for Dynasty Ninja Timer system
-Author-email: Dynasty Ninja <info@dynastyninja.com>
-License: MIT
-Project-URL: homepage, https://dynastyninja.com
-Project-URL: repository, https://github.com/dynasty-ninja/timer-backend
-Requires-Python: >=3.12
-Description-Content-Type: text/markdown
-License-File: LICENSE
-Requires-Dist: fastapi>=0.104.0
-Requires-Dist: uvicorn[standard]>=0.24.0
-Requires-Dist: pydantic>=2.0.0
-Requires-Dist: pydantic-settings>=2.0.0
-Requires-Dist: sqlalchemy>=2.0.0
-Requires-Dist: alembic>=1.12.0
-Requires-Dist: pyserial>=3.5
-Requires-Dist: pyyaml>=6.0
-Provides-Extra: dev
-Requires-Dist: pytest>=7.4.0; extra == "dev"
-Requires-Dist: pytest-asyncio>=0.21.0; extra == "dev"
-Requires-Dist: pytest-cov>=4.1.0; extra == "dev"
-Requires-Dist: black>=23.0.0; extra == "dev"
-Requires-Dist: ruff>=0.0.292; extra == "dev"
-Requires-Dist: mypy>=1.5.0; extra == "dev"
-Dynamic: license-file
-
 # Dynasty Ninja Timer
 
 Local-first timing backend for Dynasty Ninja courses. The project provides a FastAPI app with browser-based display, admin, and kiosk pages, plus SQLite persistence for courses, sessions, queue entries, runs, hardware events, settings, and audit logs.

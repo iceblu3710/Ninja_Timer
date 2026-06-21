@@ -2,6 +2,7 @@
 from fastapi import APIRouter
 
 from app.config import get_settings
+from app.db.database import database_health
 
 router = APIRouter(prefix="/api/v1", tags=["status"])
 
@@ -18,11 +19,7 @@ async def get_status() -> dict:
             "status": "running",
         },
         "config": settings.to_dict(),
-        "database": {
-            "status": "initialized",
-            "type": "sqlite",
-            "path": settings.database_url,
-        },
+        "database": database_health(settings),
         "hardware": {
             "status": "ready",
             "driver": settings.hardware_driver,

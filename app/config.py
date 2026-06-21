@@ -63,6 +63,7 @@ class Settings:
 
         db_config = config.get("database", {})
         self.database_url = db_config.get("url", self.database_url)
+        self.database_echo = db_config.get("echo", self.database_echo)
 
         hw_config = config.get("hardware", {})
         self.hardware_driver = hw_config.get("driver", self.hardware_driver)

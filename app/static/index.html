@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -86,7 +86,7 @@
     }
 
     .logo-mark::before {
-      content: "σ┐ì";
+      content: "DN";
       position: absolute;
       inset: 0;
       display: grid;
@@ -317,7 +317,9 @@
       height: 66px;
       display: grid;
       place-items: center;
-      font-size: 40px;
+      font-family: var(--font-display);
+      font-size: 24px;
+      letter-spacing: .5px;
       color: var(--gold);
       border: 1px solid rgba(246, 200, 47, .32);
       background: rgba(246,200,47,.08);
@@ -496,7 +498,9 @@
       position: absolute;
       right: 32px;
       top: 30px;
-      font-size: 118px;
+      font-family: var(--font-display);
+      font-size: 78px;
+      color: var(--gold);
       transform: rotate(-12deg);
       opacity: .92;
     }
@@ -676,8 +680,8 @@
 
       <div class="status-row">
         <div class="pill"><span class="dot"></span><span id="systemStatus">All Systems Go</span></div>
-        <div class="pill">≡ƒîí∩╕Å <span>72┬░F</span></div>
-        <div class="pill">≡ƒòÆ <span id="clockText">12:45 PM</span></div>
+        <div class="pill">TEMP <span>72 F</span></div>
+        <div class="pill">TIME <span id="clockText">12:45 PM</span></div>
       </div>
     </header>
 
@@ -692,7 +696,7 @@
       <div class="display-grid">
         <article class="panel timer-card">
           <div>
-            <div class="runner-label">ΓÜí Current Runner ΓÜí</div>
+            <div class="runner-label">Current Runner</div>
             <div class="runner-name" id="displayRunner">JAXSON</div>
           </div>
 
@@ -701,29 +705,29 @@
           <div>
             <div class="status-banner" id="displayState">Running</div>
             <div class="info-cards">
-              <div class="panel mini-card"><div class="iconbox">ΓûÑ</div><div><small>Course</small><strong id="displayCourse">Speed<br>Gauntlet</strong></div></div>
-              <div class="panel mini-card"><div class="iconbox">≡ƒæÑ</div><div><small>Age Group</small><strong id="displayAge">9-11<br>Years</strong></div></div>
-              <div class="panel mini-card"><div class="iconbox">≡ƒÅü</div><div><small>Event Mode</small><strong id="displayMode">Timed<br>Challenge</strong></div></div>
+              <div class="panel mini-card"><div class="iconbox">CRS</div><div><small>Course</small><strong id="displayCourse">Speed<br>Gauntlet</strong></div></div>
+              <div class="panel mini-card"><div class="iconbox">AGE</div><div><small>Age Group</small><strong id="displayAge">9-11<br>Years</strong></div></div>
+              <div class="panel mini-card"><div class="iconbox">MOD</div><div><small>Event Mode</small><strong id="displayMode">Timed<br>Challenge</strong></div></div>
             </div>
           </div>
         </article>
 
         <aside class="side-stack">
           <section class="panel leader-panel">
-            <h2 class="leader-title">≡ƒÅå Today's Best</h2>
+            <h2 class="leader-title">Today's Best</h2>
             <div id="todayBest"></div>
           </section>
           <section class="panel leader-panel">
-            <h2 class="leader-title">Γÿà All-Time Best</h2>
+            <h2 class="leader-title">All-Time Best</h2>
             <div id="allTimeBest"></div>
           </section>
           <section class="panel leader-panel">
-            <h2 class="leader-title">Γå╗ Last Runs</h2>
+            <h2 class="leader-title">Last Runs</h2>
             <div id="lastRuns"></div>
           </section>
         </aside>
       </div>
-      <div class="bottom-ticker"><span>ΓÜí Be strong. Be fast. Be legendary.</span><span>Next up: <strong id="nextUp">ELLIOT</strong></span></div>
+      <div class="bottom-ticker"><span>Be strong. Be fast. Be legendary.</span><span>Next up: <strong id="nextUp">ELLIOT</strong></span></div>
     </section>
 
     <section id="admin" class="view" aria-label="Admin dashboard">
@@ -732,18 +736,18 @@
           <article class="panel control-panel">
             <h2 class="section-title">Main Controls</h2>
             <div class="control-row">
-              <button class="big-control arm" data-action="arm">Γîü Arm Run</button>
-              <button class="big-control start" data-action="start">Γû╢ Start</button>
-              <button class="big-control stop" data-action="stop">Γûá Stop</button>
-              <button class="big-control reset" data-action="reset">Γå╗ Reset</button>
-              <button class="big-control delete" data-action="deleteLastRun">≡ƒùæ Delete Last</button>
+              <button class="big-control arm" data-action="arm">Arm Run</button>
+              <button class="big-control start" data-action="start">Start</button>
+              <button class="big-control stop" data-action="stop">Stop</button>
+              <button class="big-control reset" data-action="reset">Reset</button>
+              <button class="big-control delete" data-action="deleteLastRun">Delete Last</button>
             </div>
           </article>
 
           <div class="settings-row">
             <section class="panel setting-card">
               <h3 class="section-title">Course</h3>
-              <div class="iconbox">ΓûÑ</div>
+              <div class="iconbox">CRS</div>
               <p><strong>Speed Gauntlet</strong></p>
               <div class="choice selected">Course Settings</div>
             </section>
@@ -769,10 +773,10 @@
             </section>
             <section class="panel setting-card">
               <h3 class="section-title">Relay / Effects</h3>
-              <div class="choice selected">Start Lights Γ£ô</div>
-              <div class="choice selected">Finish Chime Γ£ô</div>
+              <div class="choice selected">Start Lights On</div>
+              <div class="choice selected">Finish Chime On</div>
               <div class="choice">Smoke Burst</div>
-              <div class="choice selected">Crowd Cheer Γ£ô</div>
+              <div class="choice selected">Crowd Cheer On</div>
             </section>
           </div>
 
@@ -787,9 +791,9 @@
 
         <aside>
           <section class="panel preview-card">
-            <h2 class="section-title">Live Run Preview <span style="float:right;color:var(--green)">ΓùÅ Live</span></h2>
+            <h2 class="section-title">Live Run Preview <span style="float:right;color:var(--green)">Live</span></h2>
             <div class="preview-stage">
-              <div class="runner-silhouette">≡ƒÑ╖</div>
+              <div class="runner-silhouette">RUN</div>
               <div class="preview-overlay"><span>Current Runner</span><strong id="previewRunner">JAXSON</strong><em id="previewTime">00:18.42</em></div>
             </div>
             <div class="progress-track">
@@ -811,7 +815,7 @@
           <p class="hint">Enter your info. Pick your challenge. Join the line.</p>
 
           <label class="field-label">Runner Name</label>
-          <div class="fake-input" id="fakeName">Tap to enter name... <span>≡ƒæñ</span></div>
+          <div class="fake-input" id="fakeName">Tap to enter name... <span>EDIT</span></div>
 
           <label class="field-label">Age Group</label>
           <div class="age-grid">
@@ -824,17 +828,17 @@
 
           <label class="field-label">Course</label>
           <div class="course-grid">
-            <button class="course-btn selected">ΓûÑ Speed Gauntlet<small>Fast. Focused. Obstacle Race.</small></button>
-            <button class="course-btn">Γ£ª Ninja Challenge<small>Technical. Creative. No Limits.</small></button>
+            <button class="course-btn selected">Speed Gauntlet<small>Fast. Focused. Obstacle Race.</small></button>
+            <button class="course-btn">Ninja Challenge<small>Technical. Creative. No Limits.</small></button>
           </div>
 
-          <button class="join-btn" id="joinQueueBtn">Join Queue Γ¥»Γ¥»</button>
+          <button class="join-btn" id="joinQueueBtn">Join Queue >></button>
         </article>
 
         <aside class="side-stack">
-          <section class="panel leader-panel"><h2 class="leader-title">≡ƒòÆ Up Next</h2><div id="kioskQueue"></div></section>
-          <section class="panel leader-panel"><h2 class="leader-title">≡ƒÅå Leaderboard</h2><div id="kioskLeader"></div></section>
-          <section class="panel leader-panel"><h2 class="leader-title">Γÿà Personal Bests</h2><div id="personalBests"></div></section>
+          <section class="panel leader-panel"><h2 class="leader-title">Up Next</h2><div id="kioskQueue"></div></section>
+          <section class="panel leader-panel"><h2 class="leader-title">Leaderboard</h2><div id="kioskLeader"></div></section>
+          <section class="panel leader-panel"><h2 class="leader-title">Personal Bests</h2><div id="personalBests"></div></section>
         </aside>
       </div>
     </section>
@@ -1027,12 +1031,23 @@ WS     /api/v1/ws/live</code></pre>
       window.toastTimer = setTimeout(() => toast.classList.remove('show'), 2300);
     }
 
+    function activateView(viewName) {
+      const button = $(`.tab-btn[data-view="${viewName}"]`);
+      const view = $('#' + viewName);
+      if (!button || !view) return;
+
+      $$('.tab-btn').forEach(x => x.classList.remove('active'));
+      $$('.view').forEach(x => x.classList.remove('active'));
+      button.classList.add('active');
+      view.classList.add('active');
+    }
+
+    const initialView = location.pathname.replace(/^\/+/, '') || 'display';
+    activateView(initialView);
+
     $$('.tab-btn').forEach(button => {
       button.addEventListener('click', () => {
-        $$('.tab-btn').forEach(x => x.classList.remove('active'));
-        $$('.view').forEach(x => x.classList.remove('active'));
-        button.classList.add('active');
-        $('#' + button.dataset.view).classList.add('active');
+        activateView(button.dataset.view);
       });
     });
 
@@ -1040,7 +1055,7 @@ WS     /api/v1/ws/live</code></pre>
       button.addEventListener('click', async () => {
         const action = button.dataset.action;
         const result = await api.commandTimer(action);
-        showToast(`POST /api/v1/timer/${action} ΓåÆ ${result.state}`);
+        showToast(`POST /api/v1/timer/${action} -> ${result.state}`);
         renderAll();
       });
     });
@@ -1057,16 +1072,16 @@ WS     /api/v1/ws/live</code></pre>
 
     $('#fakeName').addEventListener('click', () => {
       const name = prompt('Runner name', 'RILEY');
-      if (name) $('#fakeName').innerHTML = `${name.toUpperCase()} <span>≡ƒæñ</span>`;
+      if (name) $('#fakeName').innerHTML = `${name.toUpperCase()} <span>EDIT</span>`;
     });
 
     $('#joinQueueBtn').addEventListener('click', async () => {
-      const raw = $('#fakeName').textContent.replace('≡ƒæñ', '').trim();
+      const raw = $('#fakeName').textContent.replace('EDIT', '').trim();
       const name = raw.startsWith('Tap') ? 'RILEY' : raw;
       const age = $('.age-btn.selected').childNodes[0].textContent.trim();
       const course = $('.course-btn.selected').textContent.includes('Speed') ? 'Speed Gauntlet' : 'Ninja Challenge';
       await api.joinQueue({ name, age_group: age, course });
-      showToast(`POST /api/v1/queue ΓåÆ ${name} added`);
+      showToast(`POST /api/v1/queue -> ${name} added`);
       renderAll();
     });
 
